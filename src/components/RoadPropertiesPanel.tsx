@@ -1,5 +1,5 @@
 import type { ChangeEvent } from "react";
-import type { Road, RoadType } from "../types/road";
+import type { Road, RoadType, RouteClass } from "../types/road";
 import { ROAD_TYPE_LABELS } from "../utils/roadStyle";
 
 type RoadPropertiesPanelProps = {
@@ -40,6 +40,41 @@ export function RoadPropertiesPanel({ road, onUpdateRoad }: RoadPropertiesPanelP
       <label className="field">
         <span>Geometry</span>
         <input readOnly value={road.geometryMode ?? "polyline"} />
+      </label>
+
+      <label className="field">
+        <span>Road name</span>
+        <input value={road.name ?? ""} onChange={(event) => onUpdateRoad(road.id, { name: event.target.value })} />
+      </label>
+
+      <label className="field">
+        <span>Route class</span>
+        <select
+          value={road.routeClass ?? "none"}
+          onChange={(event) => onUpdateRoad(road.id, { routeClass: event.target.value as RouteClass })}
+        >
+          <option value="none">None</option>
+          <option value="national_freeway">National Freeway</option>
+          <option value="expressway">Expressway</option>
+          <option value="provincial_highway">Provincial Highway</option>
+        </select>
+      </label>
+
+      <label className="field">
+        <span>Route number</span>
+        <input
+          value={road.routeNumber ?? ""}
+          onChange={(event) => onUpdateRoad(road.id, { routeNumber: event.target.value })}
+        />
+      </label>
+
+      <label className="checkbox-field">
+        <input
+          type="checkbox"
+          checked={road.showLabel ?? true}
+          onChange={(event) => onUpdateRoad(road.id, { showLabel: event.target.checked })}
+        />
+        <span>Show label</span>
       </label>
 
       <label className="field">

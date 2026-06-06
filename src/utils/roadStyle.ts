@@ -54,6 +54,10 @@ export const DEFAULT_ROAD_BY_TYPE: Record<RoadType, RoadDefaults> = {
     lanes: 2,
     divider: false,
     zLevel: 0,
+    name: "",
+    routeClass: "none",
+    routeNumber: "",
+    showLabel: true,
   },
   arterial: {
     roadType: "arterial",
@@ -61,6 +65,10 @@ export const DEFAULT_ROAD_BY_TYPE: Record<RoadType, RoadDefaults> = {
     lanes: 4,
     divider: true,
     zLevel: 0,
+    name: "",
+    routeClass: "none",
+    routeNumber: "",
+    showLabel: true,
   },
 };
 

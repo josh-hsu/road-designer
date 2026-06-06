@@ -65,6 +65,15 @@ npm run tauri build
 - Draw a `Draw Curve Road` bezier road crossing a polyline road on the same `zLevel`. The sampled curve should create a visual intersection at the crossing.
 - Enable roads with `lanes > 1` and arterial `divider = true`. Lane markings and divider should not visibly run through the intersection center.
 
+## Manual Label Tests
+
+- Set `name = "中山高速公路"`, `routeClass = national_freeway`, and `routeNumber = "1"`. The road should show a green flower-style route badge with `1` and the road name.
+- Set `routeClass = expressway` and `routeNumber = "64"`. The road should show a red shield badge with `64`.
+- Set `routeClass = provincial_highway` and `routeNumber = "9"`. The road should show a blue shield badge with `9`.
+- Draw a curve road and set a name or route badge. The label should follow the road direction near the center.
+- Reverse a road direction by drawing it in the opposite direction. The label should remain readable and not appear upside down.
+- Set `showLabel = false`. No route badge or road name should be shown for that road.
+
 ## Data Format
 
 The MVP stores roads as custom JSON:
@@ -77,6 +86,12 @@ type Point = {
 
 type RoadType = "local" | "arterial";
 
+type RouteClass =
+  | "none"
+  | "national_freeway"
+  | "expressway"
+  | "provincial_highway";
+
 type Road = {
   id: string;
   points: Point[];
@@ -85,6 +100,11 @@ type Road = {
   lanes: number;
   divider: boolean;
   zLevel: number;
+  geometryMode?: "polyline" | "bezier";
+  name?: string;
+  routeClass?: RouteClass;
+  routeNumber?: string;
+  showLabel?: boolean;
 };
 
 type ProjectData = {

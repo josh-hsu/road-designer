@@ -7,6 +7,7 @@ type RoadState = {
   selectedRoadId: string | null;
   draftPoints: Point[];
   drawDefaults: RoadDefaults;
+  draftDefaults: RoadDefaults | null;
   past: ProjectData[];
   future: ProjectData[];
 };
@@ -30,6 +31,7 @@ const initialState: RoadState = {
   selectedRoadId: null,
   draftPoints: [],
   drawDefaults: getDefaultsForRoadType("local"),
+  draftDefaults: null,
   past: [],
   future: [],
 };
@@ -38,16 +40,20 @@ function normalizeRoad(road: Road): Road {
   return {
     ...road,
     geometryMode: road.geometryMode ?? "polyline",
+    name: road.name ?? "",
+    routeClass: road.routeClass ?? "none",
+    routeNumber: road.routeNumber ?? "",
+    showLabel: road.showLabel ?? true,
   };
 }
 
 function createRoad(points: Point[], defaults: RoadDefaults, geometryMode: RoadGeometryMode): Road {
-  return {
+  return normalizeRoad({
     id: `road-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
     points,
     geometryMode,
     ...defaults,
-  };
+  });
 }
 
 function getSnapshot(state: RoadState): ProjectData {
@@ -78,18 +84,24 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
       return {
         ...state,
         draftPoints: [],
+        draftDefaults: null,
       };
     case "finishDraft": {
       const requiredPoints = action.geometryMode === "bezier" ? 4 : 2;
       if (state.draftPoints.length < requiredPoints) {
-        return { ...state, draftPoints: [] };
+        return { ...state, draftPoints: [], draftDefaults: null };
       }
 
-      const road = createRoad(state.draftPoints.slice(0, requiredPoints), state.drawDefaults, action.geometryMode);
+      const road = createRoad(
+        state.draftPoints.slice(0, requiredPoints),
+        state.draftDefaults ?? state.drawDefaults,
+        action.geometryMode,
+      );
       return applyRoadsWithHistory(
         {
           ...state,
           draftPoints: [],
+          draftDefaults: null,
         },
         [...state.roads, road],
         road.id,
@@ -122,6 +134,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
       return {
         ...state,
         drawDefaults: getDefaultsForRoadType(action.roadType),
+        draftDefaults: null,
       };
     case "adoptRoadDefaults": {
       const sourceRoad = state.roads.find((road) => road.id === action.roadId);
@@ -129,12 +142,16 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
 
       return {
         ...state,
-        drawDefaults: {
+        draftDefaults: {
           roadType: sourceRoad.roadType,
           width: sourceRoad.width,
           lanes: sourceRoad.lanes,
           divider: sourceRoad.divider,
           zLevel: sourceRoad.zLevel,
+          name: sourceRoad.name ?? "",
+          routeClass: sourceRoad.routeClass ?? "none",
+          routeNumber: sourceRoad.routeNumber ?? "",
+          showLabel: sourceRoad.showLabel ?? true,
         },
       };
     }
@@ -143,6 +160,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
         {
           ...state,
           draftPoints: [],
+          draftDefaults: null,
         },
         action.project.roads.map(normalizeRoad),
         null,
@@ -155,6 +173,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
         roads: previous.roads.map(normalizeRoad),
         selectedRoadId: null,
         draftPoints: [],
+        draftDefaults: null,
         past: state.past.slice(0, -1),
         future: [getSnapshot(state), ...state.future],
       };
@@ -167,6 +186,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
         roads: next.roads.map(normalizeRoad),
         selectedRoadId: null,
         draftPoints: [],
+        draftDefaults: null,
         past: [...state.past, getSnapshot(state)],
         future: state.future.slice(1),
       };

@@ -6,6 +6,16 @@ type TauriWindow = Window & {
 
 const isTauri = () => Boolean((window as TauriWindow).__TAURI_INTERNALS__);
 
+function isValidRouteClass(value: unknown): boolean {
+  return (
+    value === undefined ||
+    value === "none" ||
+    value === "national_freeway" ||
+    value === "expressway" ||
+    value === "provincial_highway"
+  );
+}
+
 function validateProjectData(value: unknown): ProjectData {
   if (!value || typeof value !== "object") {
     throw new Error("JSON root must be an object.");
@@ -25,7 +35,11 @@ function validateProjectData(value: unknown): ProjectData {
       typeof road.lanes !== "number" ||
       typeof road.divider !== "boolean" ||
       typeof road.zLevel !== "number" ||
-      (road.geometryMode !== undefined && road.geometryMode !== "polyline" && road.geometryMode !== "bezier")
+      (road.geometryMode !== undefined && road.geometryMode !== "polyline" && road.geometryMode !== "bezier") ||
+      (road.name !== undefined && typeof road.name !== "string") ||
+      !isValidRouteClass(road.routeClass) ||
+      (road.routeNumber !== undefined && typeof road.routeNumber !== "string") ||
+      (road.showLabel !== undefined && typeof road.showLabel !== "boolean")
     ) {
       throw new Error(`Invalid road at index ${index}.`);
     }
@@ -36,6 +50,10 @@ function validateProjectData(value: unknown): ProjectData {
     roads: project.roads.map((road) => ({
       ...road,
       geometryMode: road.geometryMode ?? "polyline",
+      name: road.name ?? "",
+      routeClass: road.routeClass ?? "none",
+      routeNumber: road.routeNumber ?? "",
+      showLabel: road.showLabel ?? true,
     })),
   };
 }

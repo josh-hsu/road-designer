@@ -3,6 +3,7 @@ import { Circle, Group, Layer, Line, Rect, Stage, Text } from "react-konva";
 import type Konva from "konva";
 import type { Point, Road, ToolMode } from "../types/road";
 import { GridLayer } from "./GridLayer";
+import { RoadLabelLayer } from "./RoadLabelLayer";
 import { RoadShape } from "./RoadShape";
 import { StatusBar } from "./StatusBar";
 import { useViewportStore } from "../state/viewportStore";
@@ -343,6 +344,7 @@ export function CanvasEditor({
               onSnapPreviewChange={setSnapPreview}
             />
           ))}
+          <RoadLabelLayer roads={sortedRoads} zoom={viewport.scale} />
           {draftPoints.length > 0 && (
             <>
               {mode === "drawCurve" && (

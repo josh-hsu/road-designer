@@ -58,6 +58,7 @@ button.active {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
   border-color: #d7dde5;
   background: #ffffff;
   padding: 16px;
@@ -69,6 +70,8 @@ button.active {
 
 .properties-panel {
   border-left: 1px solid #d7dde5;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .toolbar-title {
