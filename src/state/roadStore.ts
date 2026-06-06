@@ -7,6 +7,8 @@ type RoadState = {
   selectedRoadId: string | null;
   draftPoints: Point[];
   drawDefaults: RoadDefaults;
+  past: ProjectData[];
+  future: ProjectData[];
 };
 
 type RoadAction =
@@ -16,14 +18,19 @@ type RoadAction =
   | { type: "selectRoad"; roadId: string | null }
   | { type: "updateRoad"; roadId: string; patch: Partial<Omit<Road, "id">> }
   | { type: "updateRoadPoint"; roadId: string; pointIndex: number; point: Point }
+  | { type: "deleteRoad"; roadId: string }
   | { type: "setDrawType"; roadType: RoadType }
-  | { type: "loadProject"; project: ProjectData };
+  | { type: "loadProject"; project: ProjectData }
+  | { type: "undo" }
+  | { type: "redo" };
 
 const initialState: RoadState = {
   roads: [],
   selectedRoadId: null,
   draftPoints: [],
   drawDefaults: getDefaultsForRoadType("local"),
+  past: [],
+  future: [],
 };
 
 function normalizeRoad(road: Road): Road {
@@ -39,6 +46,23 @@ function createRoad(points: Point[], defaults: RoadDefaults, geometryMode: RoadG
     points,
     geometryMode,
     ...defaults,
+  };
+}
+
+function getSnapshot(state: RoadState): ProjectData {
+  return {
+    version: 1,
+    roads: state.roads,
+  };
+}
+
+function applyRoadsWithHistory(state: RoadState, roads: Road[], selectedRoadId = state.selectedRoadId): RoadState {
+  return {
+    ...state,
+    roads,
+    selectedRoadId,
+    past: [...state.past, getSnapshot(state)],
+    future: [],
   };
 }
 
@@ -61,48 +85,76 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
       }
 
       const road = createRoad(state.draftPoints.slice(0, requiredPoints), state.drawDefaults, action.geometryMode);
-      return {
-        ...state,
-        roads: [...state.roads, road],
-        selectedRoadId: road.id,
-        draftPoints: [],
-      };
+      return applyRoadsWithHistory(
+        {
+          ...state,
+          draftPoints: [],
+        },
+        [...state.roads, road],
+        road.id,
+      );
     }
     case "selectRoad":
       return {
         ...state,
         selectedRoadId: action.roadId,
       };
-    case "updateRoad":
-      return {
-        ...state,
-        roads: state.roads.map((road) =>
-          road.id === action.roadId ? { ...road, ...action.patch } : road,
-        ),
-      };
-    case "updateRoadPoint":
-      return {
-        ...state,
-        roads: state.roads.map((road) => {
-          if (road.id !== action.roadId) return road;
-          const points = road.points.map((point, index) =>
-            index === action.pointIndex ? action.point : point,
-          );
-          return { ...road, points };
-        }),
-      };
+    case "updateRoad": {
+      const roads = state.roads.map((road) => (road.id === action.roadId ? { ...road, ...action.patch } : road));
+      return applyRoadsWithHistory(state, roads);
+    }
+    case "updateRoadPoint": {
+      const roads = state.roads.map((road) => {
+        if (road.id !== action.roadId) return road;
+        const points = road.points.map((point, index) =>
+          index === action.pointIndex ? action.point : point,
+        );
+        return { ...road, points };
+      });
+      return applyRoadsWithHistory(state, roads);
+    }
+    case "deleteRoad": {
+      const roads = state.roads.filter((road) => road.id !== action.roadId);
+      return applyRoadsWithHistory(state, roads, null);
+    }
     case "setDrawType":
       return {
         ...state,
         drawDefaults: getDefaultsForRoadType(action.roadType),
       };
     case "loadProject":
+      return applyRoadsWithHistory(
+        {
+          ...state,
+          draftPoints: [],
+        },
+        action.project.roads.map(normalizeRoad),
+        null,
+      );
+    case "undo": {
+      const previous = state.past[state.past.length - 1];
+      if (!previous) return state;
       return {
         ...state,
-        roads: action.project.roads.map(normalizeRoad),
+        roads: previous.roads.map(normalizeRoad),
         selectedRoadId: null,
         draftPoints: [],
+        past: state.past.slice(0, -1),
+        future: [getSnapshot(state), ...state.future],
       };
+    }
+    case "redo": {
+      const next = state.future[0];
+      if (!next) return state;
+      return {
+        ...state,
+        roads: next.roads.map(normalizeRoad),
+        selectedRoadId: null,
+        draftPoints: [],
+        past: [...state.past, getSnapshot(state)],
+        future: state.future.slice(1),
+      };
+    }
     default:
       return state;
   }
@@ -133,6 +185,9 @@ export function useRoadStore() {
   const selectRoad = useCallback((roadId: string | null) => dispatch({ type: "selectRoad", roadId }), []);
   const setDrawType = useCallback((roadType: RoadType) => dispatch({ type: "setDrawType", roadType }), []);
   const loadProject = useCallback((project: ProjectData) => dispatch({ type: "loadProject", project }), []);
+  const deleteRoad = useCallback((roadId: string) => dispatch({ type: "deleteRoad", roadId }), []);
+  const undo = useCallback(() => dispatch({ type: "undo" }), []);
+  const redo = useCallback(() => dispatch({ type: "redo" }), []);
   const updateRoad = useCallback(
     (roadId: string, patch: Partial<Omit<Road, "id">>) => dispatch({ type: "updateRoad", roadId, patch }),
     [],
@@ -153,6 +208,9 @@ export function useRoadStore() {
     selectRoad,
     setDrawType,
     loadProject,
+    deleteRoad,
+    undo,
+    redo,
     updateRoad,
     updateRoadPoint,
   };

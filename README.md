@@ -57,6 +57,14 @@ npm run tauri build
 - Use `Export JSON` to save the current project.
 - Use `Import JSON` to load a saved project.
 
+## Manual Intersection Tests
+
+- Draw two local roads on the same `zLevel` so they cross in an X or plus shape. The crossing should show a continuous road intersection.
+- Draw an arterial road and a local road on the same `zLevel` so they form a T or plus shape. Road bodies should overlap naturally, while markings stop near the crossing.
+- Draw two roads that cross geometrically but assign different `zLevel` values. The higher road should pass over the lower road without an intersection treatment.
+- Draw a `Draw Curve Road` bezier road crossing a polyline road on the same `zLevel`. The sampled curve should create a visual intersection at the crossing.
+- Enable roads with `lanes > 1` and arterial `divider = true`. Lane markings and divider should not visibly run through the intersection center.
+
 ## Data Format
 
 The MVP stores roads as custom JSON:

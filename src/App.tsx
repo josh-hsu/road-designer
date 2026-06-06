@@ -8,26 +8,55 @@ import { exportProjectData, importProjectDataFromFile, importProjectDataWithDial
 
 export default function App() {
   const [mode, setMode] = useState<ToolMode>("select");
+  const [showGrid, setShowGrid] = useState(true);
   const browserImportRef = useRef<HTMLInputElement | null>(null);
   const roadStore = useRoadStore();
-  const { clearDraft, finishDraft } = roadStore;
+  const { clearDraft, deleteRoad, finishDraft, redo, selectedRoadId, undo } = roadStore;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const isEditingField =
+        target?.tagName === "INPUT" || target?.tagName === "SELECT" || target?.tagName === "TEXTAREA";
+
+      if (isEditingField) return;
+
+      const isUndo = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && !event.shiftKey;
+      const isRedo = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z" && event.shiftKey;
+
+      if (isUndo) {
+        event.preventDefault();
+        undo();
+        return;
+      }
+
+      if (isRedo) {
+        event.preventDefault();
+        redo();
+        return;
+      }
+
       if (event.key === "Enter" && (mode === "draw" || mode === "drawCurve")) {
         finishDraft(mode === "drawCurve" ? "bezier" : "polyline");
         setMode("select");
+        event.preventDefault();
       }
 
       if (event.key === "Escape" && (mode === "draw" || mode === "drawCurve")) {
         clearDraft();
         setMode("select");
+        event.preventDefault();
+      }
+
+      if (mode === "select" && selectedRoadId && (event.key === "Delete" || event.key === "Backspace")) {
+        deleteRoad(selectedRoadId);
+        event.preventDefault();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [clearDraft, finishDraft, mode]);
+  }, [clearDraft, deleteRoad, finishDraft, mode, redo, selectedRoadId, undo]);
 
   const handleImportClick = async () => {
     try {
@@ -63,8 +92,10 @@ export default function App() {
       <Toolbar
         mode={mode}
         drawRoadType={roadStore.drawDefaults.roadType}
+        showGrid={showGrid}
         onModeChange={setMode}
         onDrawRoadTypeChange={roadStore.setDrawType}
+        onShowGridChange={setShowGrid}
         onExport={handleExport}
         onImportClick={handleImportClick}
       />
@@ -86,6 +117,7 @@ export default function App() {
         roads={roadStore.roads}
         selectedRoadId={roadStore.selectedRoadId}
         draftPoints={roadStore.draftPoints}
+        showGrid={showGrid}
         onCanvasPoint={roadStore.addDraftPoint}
         onSelectRoad={roadStore.selectRoad}
         onRoadPointDrag={roadStore.updateRoadPoint}

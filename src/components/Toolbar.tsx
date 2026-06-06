@@ -4,8 +4,10 @@ import { ROAD_TYPE_LABELS } from "../utils/roadStyle";
 type ToolbarProps = {
   mode: ToolMode;
   drawRoadType: RoadType;
+  showGrid: boolean;
   onModeChange: (mode: ToolMode) => void;
   onDrawRoadTypeChange: (roadType: RoadType) => void;
+  onShowGridChange: (showGrid: boolean) => void;
   onExport: () => void;
   onImportClick: () => void;
 };
@@ -13,8 +15,10 @@ type ToolbarProps = {
 export function Toolbar({
   mode,
   drawRoadType,
+  showGrid,
   onModeChange,
   onDrawRoadTypeChange,
+  onShowGridChange,
   onExport,
   onImportClick,
 }: ToolbarProps) {
@@ -37,6 +41,11 @@ export function Toolbar({
           <option value="local">{ROAD_TYPE_LABELS.local}</option>
           <option value="arterial">{ROAD_TYPE_LABELS.arterial}</option>
         </select>
+      </label>
+
+      <label className="checkbox-field">
+        <input type="checkbox" checked={showGrid} onChange={(event) => onShowGridChange(event.target.checked)} />
+        <span>Show Grid</span>
       </label>
 
       <div className="toolbar-spacer" />

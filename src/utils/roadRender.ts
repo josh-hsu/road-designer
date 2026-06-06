@@ -10,6 +10,11 @@ export type RoadLayerStyle = {
   opacity?: number;
 };
 
+export type RoadMarkingMask = {
+  point: Point;
+  radius: number;
+};
+
 export type JunctionRenderStyle = {
   x: number;
   y: number;
@@ -47,7 +52,66 @@ export function getRoadLayerStyles(road: Road, flattenedPoints: number[], isSele
   return layers;
 }
 
-export function getLaneMarkingLayers(road: Road, renderPoints: Point[]): RoadLayerStyle[] {
+function distance(a: Point, b: Point): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function densifyPolyline(points: Point[], maxSegmentLength = 8): Point[] {
+  if (points.length < 2) return points;
+
+  const densePoints: Point[] = [];
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const from = points[index];
+    const to = points[index + 1];
+    const segmentLength = distance(from, to);
+    const steps = Math.max(1, Math.ceil(segmentLength / maxSegmentLength));
+
+    if (index === 0) densePoints.push(from);
+
+    for (let step = 1; step <= steps; step += 1) {
+      const t = step / steps;
+      densePoints.push({
+        x: from.x + (to.x - from.x) * t,
+        y: from.y + (to.y - from.y) * t,
+      });
+    }
+  }
+
+  return densePoints;
+}
+
+function pointIsMasked(point: Point, masks: RoadMarkingMask[]): boolean {
+  return masks.some((mask) => distance(point, mask.point) <= mask.radius);
+}
+
+function splitPolylineByMasks(points: Point[], masks: RoadMarkingMask[]): Point[][] {
+  if (masks.length === 0) return [points];
+
+  const densePoints = densifyPolyline(points);
+  const chunks: Point[][] = [];
+  let currentChunk: Point[] = [];
+
+  densePoints.forEach((point) => {
+    if (pointIsMasked(point, masks)) {
+      if (currentChunk.length > 1) chunks.push(currentChunk);
+      currentChunk = [];
+      return;
+    }
+
+    currentChunk.push(point);
+  });
+
+  if (currentChunk.length > 1) chunks.push(currentChunk);
+
+  return chunks;
+}
+
+export function getLaneMarkingLayers(
+  road: Road,
+  renderPoints: Point[],
+  masks: RoadMarkingMask[] = [],
+): RoadLayerStyle[] {
   if (road.lanes <= 1 || renderPoints.length < 2) return [];
 
   const style = getRoadStyle(road);
@@ -60,29 +124,34 @@ export function getLaneMarkingLayers(road: Road, renderPoints: Point[]): RoadLay
 
     if (isCenterDivider) continue;
 
-    layers.push({
-      points: offsetPolyline(renderPoints, offset).flatMap((point) => [point.x, point.y]),
-      stroke: style.laneMarking,
-      strokeWidth: style.laneMarkingWidth,
-      dash: [10, 12],
-      opacity: 0.72,
+    splitPolylineByMasks(offsetPolyline(renderPoints, offset), masks).forEach((chunk) => {
+      layers.push({
+        points: chunk.flatMap((point) => [point.x, point.y]),
+        stroke: style.laneMarking,
+        strokeWidth: style.laneMarkingWidth,
+        dash: [10, 12],
+        opacity: 0.72,
+      });
     });
   }
 
   return layers;
 }
 
-export function getDividerLayer(road: Road, flattenedPoints: number[]): RoadLayerStyle | null {
-  if (!road.divider || road.roadType !== "arterial") return null;
+export function getDividerLayers(
+  road: Road,
+  renderPoints: Point[],
+  masks: RoadMarkingMask[] = [],
+): RoadLayerStyle[] {
+  if (!road.divider) return [];
 
   const style = getRoadStyle(road);
-  return {
-    points: flattenedPoints,
+  return splitPolylineByMasks(renderPoints, masks).map((chunk) => ({
+    points: chunk.flatMap((point) => [point.x, point.y]),
     stroke: style.divider,
     strokeWidth: style.dividerWidth,
-    dash: [18, 10],
     opacity: 0.95,
-  };
+  }));
 }
 
 export function getEndpointJunctions(roads: Road[]): JunctionRenderStyle[] {
@@ -100,19 +169,17 @@ export function getEndpointJunctions(roads: Road[]): JunctionRenderStyle[] {
     .filter(([, connectedRoads]) => connectedRoads.length > 1)
     .map(([key, connectedRoads]) => {
       const [x, y] = key.split(",").map(Number);
-      const roadsByLevel = [...connectedRoads].sort((a, b) => a.zLevel - b.zLevel);
-      const topRoad = roadsByLevel[roadsByLevel.length - 1] ?? connectedRoads[0];
-      const topStyle = getRoadStyle(topRoad);
       const widestRoad = connectedRoads.reduce((widest, road) => (road.width > widest.width ? road : widest));
       const widestStyle = getRoadStyle(widestRoad);
+      const outerRadius = (widestRoad.width + widestStyle.outerPadding) / 2;
 
       return {
         x,
         y,
-        outerRadius: (widestRoad.width + widestStyle.outerPadding) / 2,
-        bodyRadius: widestRoad.width / 2,
-        outer: topStyle.outer,
-        body: topStyle.body,
+        outerRadius,
+        bodyRadius: outerRadius + 0.75,
+        outer: widestStyle.outer,
+        body: widestStyle.body,
       };
     });
 }
