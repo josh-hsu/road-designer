@@ -1,6 +1,6 @@
 import type { Point, Road } from "../types/road";
 import { offsetPolyline } from "./roadGeometry";
-import { getRoadStyle } from "./roadStyle";
+import { compareRoadVisualPriority, getRoadStyle } from "./roadStyle";
 
 export type RoadLayerStyle = {
   points: number[];
@@ -170,16 +170,18 @@ export function getEndpointJunctions(roads: Road[]): JunctionRenderStyle[] {
     .map(([key, connectedRoads]) => {
       const [x, y] = key.split(",").map(Number);
       const widestRoad = connectedRoads.reduce((widest, road) => (road.width > widest.width ? road : widest));
+      const primaryRoad = [...connectedRoads].sort(compareRoadVisualPriority)[connectedRoads.length - 1] ?? widestRoad;
       const widestStyle = getRoadStyle(widestRoad);
+      const primaryStyle = getRoadStyle(primaryRoad);
       const outerRadius = (widestRoad.width + widestStyle.outerPadding) / 2;
 
       return {
         x,
         y,
         outerRadius,
-        bodyRadius: outerRadius + 0.75,
-        outer: widestStyle.outer,
-        body: widestStyle.body,
+        bodyRadius: outerRadius + 0.25,
+        outer: primaryStyle.outer,
+        body: primaryStyle.body,
       };
     });
 }

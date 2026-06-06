@@ -20,6 +20,7 @@ type RoadAction =
   | { type: "updateRoadPoint"; roadId: string; pointIndex: number; point: Point }
   | { type: "deleteRoad"; roadId: string }
   | { type: "setDrawType"; roadType: RoadType }
+  | { type: "adoptRoadDefaults"; roadId: string }
   | { type: "loadProject"; project: ProjectData }
   | { type: "undo" }
   | { type: "redo" };
@@ -122,6 +123,21 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
         ...state,
         drawDefaults: getDefaultsForRoadType(action.roadType),
       };
+    case "adoptRoadDefaults": {
+      const sourceRoad = state.roads.find((road) => road.id === action.roadId);
+      if (!sourceRoad) return state;
+
+      return {
+        ...state,
+        drawDefaults: {
+          roadType: sourceRoad.roadType,
+          width: sourceRoad.width,
+          lanes: sourceRoad.lanes,
+          divider: sourceRoad.divider,
+          zLevel: sourceRoad.zLevel,
+        },
+      };
+    }
     case "loadProject":
       return applyRoadsWithHistory(
         {
@@ -184,6 +200,7 @@ export function useRoadStore() {
   );
   const selectRoad = useCallback((roadId: string | null) => dispatch({ type: "selectRoad", roadId }), []);
   const setDrawType = useCallback((roadType: RoadType) => dispatch({ type: "setDrawType", roadType }), []);
+  const adoptRoadDefaults = useCallback((roadId: string) => dispatch({ type: "adoptRoadDefaults", roadId }), []);
   const loadProject = useCallback((project: ProjectData) => dispatch({ type: "loadProject", project }), []);
   const deleteRoad = useCallback((roadId: string) => dispatch({ type: "deleteRoad", roadId }), []);
   const undo = useCallback(() => dispatch({ type: "undo" }), []);
@@ -207,6 +224,7 @@ export function useRoadStore() {
     finishDraft,
     selectRoad,
     setDrawType,
+    adoptRoadDefaults,
     loadProject,
     deleteRoad,
     undo,

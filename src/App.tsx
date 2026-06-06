@@ -119,6 +119,7 @@ export default function App() {
         draftPoints={roadStore.draftPoints}
         showGrid={showGrid}
         onCanvasPoint={roadStore.addDraftPoint}
+        onAdoptRoadDefaults={roadStore.adoptRoadDefaults}
         onSelectRoad={roadStore.selectRoad}
         onRoadPointDrag={roadStore.updateRoadPoint}
       />

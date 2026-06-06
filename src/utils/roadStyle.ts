@@ -42,6 +42,11 @@ export const ROAD_TYPE_LABELS: Record<RoadType, string> = {
   arterial: "Arterial road",
 };
 
+export const ROAD_TYPE_PRIORITY: Record<RoadType, number> = {
+  local: 1,
+  arterial: 2,
+};
+
 export const DEFAULT_ROAD_BY_TYPE: Record<RoadType, RoadDefaults> = {
   local: {
     roadType: "local",
@@ -65,4 +70,14 @@ export function getRoadStyle(road: Road): RoadVisualStyle {
 
 export function getDefaultsForRoadType(roadType: RoadType): RoadDefaults {
   return DEFAULT_ROAD_BY_TYPE[roadType];
+}
+
+export function compareRoadVisualPriority(a: Road, b: Road): number {
+  const typePriority = ROAD_TYPE_PRIORITY[a.roadType] - ROAD_TYPE_PRIORITY[b.roadType];
+  if (typePriority !== 0) return typePriority;
+
+  const widthPriority = a.width - b.width;
+  if (widthPriority !== 0) return widthPriority;
+
+  return a.id.localeCompare(b.id);
 }

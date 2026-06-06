@@ -9,6 +9,7 @@ import { useViewportStore } from "../state/viewportStore";
 import { getRoadIntersections } from "../utils/intersections";
 import { flattenPoints, getRoadRenderPoints } from "../utils/roadGeometry";
 import { getEndpointJunctions } from "../utils/roadRender";
+import { compareRoadVisualPriority } from "../utils/roadStyle";
 import { snapPointToRoadNode } from "../utils/snap";
 import type { SnapTarget } from "../utils/snap";
 import { screenToWorld } from "../utils/viewport";
@@ -20,6 +21,7 @@ type CanvasEditorProps = {
   draftPoints: Point[];
   showGrid: boolean;
   onCanvasPoint: (point: Point) => void;
+  onAdoptRoadDefaults: (roadId: string) => void;
   onSelectRoad: (roadId: string | null) => void;
   onRoadPointDrag: (roadId: string, pointIndex: number, point: Point) => void;
 };
@@ -42,9 +44,13 @@ function groupRoadsByLevel(roads: Road[]): Array<{ zLevel: number; roads: Road[]
   return Array.from(grouped.entries())
     .map(([zLevel, levelRoads]) => ({
       zLevel,
-      roads: levelRoads.sort((a, b) => a.id.localeCompare(b.id)),
+      roads: levelRoads.sort(compareRoadVisualPriority),
     }))
     .sort((a, b) => a.zLevel - b.zLevel);
+}
+
+function isRoadEndpoint(road: Road, pointIndex: number): boolean {
+  return pointIndex === 0 || pointIndex === road.points.length - 1;
 }
 
 export function CanvasEditor({
@@ -54,6 +60,7 @@ export function CanvasEditor({
   draftPoints,
   showGrid,
   onCanvasPoint,
+  onAdoptRoadDefaults,
   onSelectRoad,
   onRoadPointDrag,
 }: CanvasEditorProps) {
@@ -149,6 +156,12 @@ export function CanvasEditor({
       const point = getWorldPoint(stage);
       const shouldSnap = mode === "draw" || draftPoints.length === 0 || draftPoints.length === 3;
       const snapped = shouldSnap ? getSnappedPoint(point) : { point, target: null };
+      if (draftPoints.length === 0 && snapped.target) {
+        const sourceRoad = roads.find((road) => road.id === snapped.target?.roadId);
+        if (sourceRoad && isRoadEndpoint(sourceRoad, snapped.target.pointIndex)) {
+          onAdoptRoadDefaults(sourceRoad.id);
+        }
+      }
       setSnapPreview(snapped.target);
       onCanvasPoint(snapped.point);
       return;
@@ -275,25 +288,6 @@ export function CanvasEditor({
                     onSnapPreviewChange={setSnapPreview}
                   />
                 ))}
-                {level.roads.map((road) => (
-                  <RoadShape
-                    key={`markings-${road.id}`}
-                    road={road}
-                    renderPhase="markings"
-                    markingMasks={levelIntersections
-                      .filter((intersection) => intersection.roadIds.includes(road.id))
-                      .map((intersection) => ({
-                        point: intersection.point,
-                        radius: intersection.radius + 4,
-                      }))}
-                    isSelected={road.id === selectedRoadId}
-                    canSelect={mode === "select" && !spacePressed && !isPanning}
-                    getSnappedPoint={getSnappedPoint}
-                    onSelect={onSelectRoad}
-                    onPointDrag={onRoadPointDrag}
-                    onSnapPreviewChange={setSnapPreview}
-                  />
-                ))}
                 {endpointJunctions.map((junction) => (
                   <Circle
                     key={`junction-outer-${junction.x}-${junction.y}`}
@@ -312,6 +306,25 @@ export function CanvasEditor({
                     radius={junction.bodyRadius}
                     fill={junction.body}
                     listening={false}
+                  />
+                ))}
+                {level.roads.map((road) => (
+                  <RoadShape
+                    key={`markings-${road.id}`}
+                    road={road}
+                    renderPhase="markings"
+                    markingMasks={levelIntersections
+                      .filter((intersection) => intersection.roadIds.includes(road.id))
+                      .map((intersection) => ({
+                        point: intersection.point,
+                        radius: intersection.radius + 4,
+                      }))}
+                    isSelected={road.id === selectedRoadId}
+                    canSelect={mode === "select" && !spacePressed && !isPanning}
+                    getSnappedPoint={getSnappedPoint}
+                    onSelect={onSelectRoad}
+                    onPointDrag={onRoadPointDrag}
+                    onSnapPreviewChange={setSnapPreview}
                   />
                 ))}
               </Group>
