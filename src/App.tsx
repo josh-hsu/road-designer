@@ -91,10 +91,17 @@ export default function App() {
     <div className="app-layout">
       <Toolbar
         mode={mode}
-        drawRoadType={roadStore.drawDefaults.roadType}
+        drawDefaults={roadStore.drawDefaults}
         showGrid={showGrid}
         onModeChange={setMode}
         onDrawRoadTypeChange={roadStore.setDrawType}
+        onDrawPresetSelect={(toolMode, preset) => {
+          roadStore.setDrawPreset({
+            ...roadStore.drawDefaults,
+            ...preset,
+          });
+          setMode(toolMode);
+        }}
         onShowGridChange={setShowGrid}
         onExport={handleExport}
         onImportClick={handleImportClick}

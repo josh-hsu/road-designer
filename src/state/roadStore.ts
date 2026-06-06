@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useReducer } from "react";
 import type { Point, ProjectData, Road, RoadDefaults, RoadGeometryMode, RoadType } from "../types/road";
-import { getDefaultsForRoadType } from "../utils/roadStyle";
+import { DEFAULT_ROAD_BY_TYPE, getDefaultsForRoadType } from "../utils/roadStyle";
 
 type RoadState = {
   roads: Road[];
@@ -21,6 +21,7 @@ type RoadAction =
   | { type: "updateRoadPoint"; roadId: string; pointIndex: number; point: Point }
   | { type: "deleteRoad"; roadId: string }
   | { type: "setDrawType"; roadType: RoadType }
+  | { type: "setDrawPreset"; defaults: RoadDefaults }
   | { type: "adoptRoadDefaults"; roadId: string }
   | { type: "loadProject"; project: ProjectData }
   | { type: "undo" }
@@ -49,10 +50,10 @@ function normalizeRoad(road: Road): Road {
 
 function createRoad(points: Point[], defaults: RoadDefaults, geometryMode: RoadGeometryMode): Road {
   return normalizeRoad({
+    ...defaults,
     id: `road-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
     points,
     geometryMode,
-    ...defaults,
   });
 }
 
@@ -133,7 +134,20 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
     case "setDrawType":
       return {
         ...state,
-        drawDefaults: getDefaultsForRoadType(action.roadType),
+        drawDefaults: {
+          ...state.drawDefaults,
+          roadType: action.roadType,
+          name: DEFAULT_ROAD_BY_TYPE[action.roadType].name,
+          routeClass: DEFAULT_ROAD_BY_TYPE[action.roadType].routeClass,
+          routeNumber: DEFAULT_ROAD_BY_TYPE[action.roadType].routeNumber,
+          showLabel: DEFAULT_ROAD_BY_TYPE[action.roadType].showLabel,
+        },
+        draftDefaults: null,
+      };
+    case "setDrawPreset":
+      return {
+        ...state,
+        drawDefaults: action.defaults,
         draftDefaults: null,
       };
     case "adoptRoadDefaults": {
@@ -220,6 +234,10 @@ export function useRoadStore() {
   );
   const selectRoad = useCallback((roadId: string | null) => dispatch({ type: "selectRoad", roadId }), []);
   const setDrawType = useCallback((roadType: RoadType) => dispatch({ type: "setDrawType", roadType }), []);
+  const setDrawPreset = useCallback(
+    (defaults: RoadDefaults) => dispatch({ type: "setDrawPreset", defaults }),
+    [],
+  );
   const adoptRoadDefaults = useCallback((roadId: string) => dispatch({ type: "adoptRoadDefaults", roadId }), []);
   const loadProject = useCallback((project: ProjectData) => dispatch({ type: "loadProject", project }), []);
   const deleteRoad = useCallback((roadId: string) => dispatch({ type: "deleteRoad", roadId }), []);
@@ -244,6 +262,7 @@ export function useRoadStore() {
     finishDraft,
     selectRoad,
     setDrawType,
+    setDrawPreset,
     adoptRoadDefaults,
     loadProject,
     deleteRoad,
