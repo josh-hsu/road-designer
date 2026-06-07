@@ -17,7 +17,9 @@ type RoadShapeProps = {
     exclude?: { roadId: string; pointIndex: number },
   ) => { point: Point; target: SnapTarget | null };
   onSelect: (roadId: string | null) => void;
-  onPointDrag: (roadId: string, pointIndex: number, point: Point) => void;
+  onPointDragStart: () => void;
+  onPointDragMove: (roadId: string, pointIndex: number, point: Point) => void;
+  onPointDragEnd: (roadId: string, pointIndex: number, point: Point) => void;
   onSnapPreviewChange: (target: SnapTarget | null) => void;
 };
 
@@ -29,7 +31,9 @@ export function RoadShape({
   markingMasks = [],
   getSnappedPoint,
   onSelect,
-  onPointDrag,
+  onPointDragStart,
+  onPointDragMove,
+  onPointDragEnd,
   onSnapPreviewChange,
 }: RoadShapeProps) {
   const style = getRoadStyle(road);
@@ -130,6 +134,7 @@ export function RoadShape({
             stroke={style.selected}
             strokeWidth={3}
             draggable={canSelect}
+            onDragStart={onPointDragStart}
             onDragMove={(event) => {
               const nextPoint = {
                 x: Math.round(event.target.x()),
@@ -141,7 +146,7 @@ export function RoadShape({
                 : { point: nextPoint, target: null };
               event.target.position(snapped.point);
               onSnapPreviewChange(snapped.target);
-              onPointDrag(road.id, index, {
+              onPointDragMove(road.id, index, {
                 x: Math.round(snapped.point.x),
                 y: Math.round(snapped.point.y),
               });
@@ -156,7 +161,7 @@ export function RoadShape({
                 ? getSnappedPoint(nextPoint, { roadId: road.id, pointIndex: index })
                 : { point: nextPoint, target: null };
               event.target.position(snapped.point);
-              onPointDrag(road.id, index, snapped.point);
+              onPointDragEnd(road.id, index, snapped.point);
               onSnapPreviewChange(null);
             }}
           />

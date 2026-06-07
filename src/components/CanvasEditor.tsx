@@ -24,7 +24,9 @@ type CanvasEditorProps = {
   onCanvasPoint: (point: Point) => void;
   onAdoptRoadDefaults: (roadId: string) => void;
   onSelectRoad: (roadId: string | null) => void;
-  onRoadPointDrag: (roadId: string, pointIndex: number, point: Point) => void;
+  onRoadPointDragStart: () => void;
+  onRoadPointDragMove: (roadId: string, pointIndex: number, point: Point) => void;
+  onRoadPointDragEnd: (roadId: string, pointIndex: number, point: Point) => void;
 };
 
 function getScreenPoint(stage: Konva.Stage): Point {
@@ -63,7 +65,9 @@ export function CanvasEditor({
   onCanvasPoint,
   onAdoptRoadDefaults,
   onSelectRoad,
-  onRoadPointDrag,
+  onRoadPointDragStart,
+  onRoadPointDragMove,
+  onRoadPointDragEnd,
 }: CanvasEditorProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ width: 800, height: 600 });
@@ -259,7 +263,9 @@ export function CanvasEditor({
                     canSelect={mode === "select" && !spacePressed && !isPanning}
                     getSnappedPoint={getSnappedPoint}
                     onSelect={onSelectRoad}
-                    onPointDrag={onRoadPointDrag}
+                    onPointDragStart={onRoadPointDragStart}
+                    onPointDragMove={onRoadPointDragMove}
+                    onPointDragEnd={onRoadPointDragEnd}
                     onSnapPreviewChange={setSnapPreview}
                   />
                 ))}
@@ -272,7 +278,9 @@ export function CanvasEditor({
                     canSelect={mode === "select" && !spacePressed && !isPanning}
                     getSnappedPoint={getSnappedPoint}
                     onSelect={onSelectRoad}
-                    onPointDrag={onRoadPointDrag}
+                    onPointDragStart={onRoadPointDragStart}
+                    onPointDragMove={onRoadPointDragMove}
+                    onPointDragEnd={onRoadPointDragEnd}
                     onSnapPreviewChange={setSnapPreview}
                   />
                 ))}
@@ -285,7 +293,9 @@ export function CanvasEditor({
                     canSelect={mode === "select" && !spacePressed && !isPanning}
                     getSnappedPoint={getSnappedPoint}
                     onSelect={onSelectRoad}
-                    onPointDrag={onRoadPointDrag}
+                    onPointDragStart={onRoadPointDragStart}
+                    onPointDragMove={onRoadPointDragMove}
+                    onPointDragEnd={onRoadPointDragEnd}
                     onSnapPreviewChange={setSnapPreview}
                   />
                 ))}
@@ -324,7 +334,9 @@ export function CanvasEditor({
                     canSelect={mode === "select" && !spacePressed && !isPanning}
                     getSnappedPoint={getSnappedPoint}
                     onSelect={onSelectRoad}
-                    onPointDrag={onRoadPointDrag}
+                    onPointDragStart={onRoadPointDragStart}
+                    onPointDragMove={onRoadPointDragMove}
+                    onPointDragEnd={onRoadPointDragEnd}
                     onSnapPreviewChange={setSnapPreview}
                   />
                 ))}
@@ -340,7 +352,9 @@ export function CanvasEditor({
               canSelect={mode === "select" && !spacePressed && !isPanning}
               getSnappedPoint={getSnappedPoint}
               onSelect={onSelectRoad}
-              onPointDrag={onRoadPointDrag}
+              onPointDragStart={onRoadPointDragStart}
+              onPointDragMove={onRoadPointDragMove}
+              onPointDragEnd={onRoadPointDragEnd}
               onSnapPreviewChange={setSnapPreview}
             />
           ))}

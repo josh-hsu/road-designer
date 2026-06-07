@@ -128,7 +128,9 @@ export default function App() {
         onCanvasPoint={roadStore.addDraftPoint}
         onAdoptRoadDefaults={roadStore.adoptRoadDefaults}
         onSelectRoad={roadStore.selectRoad}
-        onRoadPointDrag={roadStore.updateRoadPoint}
+        onRoadPointDragStart={roadStore.beginRoadPointDrag}
+        onRoadPointDragMove={roadStore.previewRoadPointDrag}
+        onRoadPointDragEnd={roadStore.endRoadPointDrag}
       />
       <RoadPropertiesPanel road={roadStore.selectedRoad} onUpdateRoad={roadStore.updateRoad} />
     </div>
