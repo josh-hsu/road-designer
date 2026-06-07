@@ -1,5 +1,5 @@
 import type { ChangeEvent } from "react";
-import type { Road, RoadKind, RoadType, RouteClass } from "../types/road";
+import type { OneWayDirection, Road, RoadKind, RoadType, RouteClass } from "../types/road";
 import { ROAD_TYPE_LABELS } from "../utils/roadStyle";
 
 type RoadPropertiesPanelProps = {
@@ -111,6 +111,48 @@ export function RoadPropertiesPanel({ road, onUpdateRoad }: RoadPropertiesPanelP
         />
         <span>Divider</span>
       </label>
+
+      <label className="checkbox-field">
+        <input
+          type="checkbox"
+          checked={road.oneWay ?? false}
+          onChange={(event) =>
+            onUpdateRoad(road.id, {
+              oneWay: event.target.checked,
+              oneWayDirection: road.oneWayDirection ?? "forward",
+            })
+          }
+        />
+        <span>One way</span>
+      </label>
+
+      {(road.oneWay ?? false) && (
+        <>
+          <label className="field">
+            <span>One-way direction</span>
+            <select
+              value={road.oneWayDirection ?? "forward"}
+              onChange={(event) =>
+                onUpdateRoad(road.id, { oneWayDirection: event.target.value as OneWayDirection })
+              }
+            >
+              <option value="forward">Forward</option>
+              <option value="reverse">Reverse</option>
+            </select>
+          </label>
+
+          <button
+            type="button"
+            onClick={() =>
+              onUpdateRoad(road.id, {
+                oneWayDirection: (road.oneWayDirection ?? "forward") === "forward" ? "reverse" : "forward",
+              })
+            }
+          >
+            Reverse direction
+          </button>
+        </>
+      )}
 
       <label className="field">
         <span>Z level</span>

@@ -9,6 +9,8 @@ export type RoadGeometryMode = "polyline" | "bezier";
 
 export type RoadKind = "standard" | "connector";
 
+export type OneWayDirection = "forward" | "reverse";
+
 export type RouteClass = "none" | "national_freeway" | "expressway" | "provincial_highway";
 
 export type Road = {
@@ -23,6 +25,8 @@ export type Road = {
   kind?: RoadKind;
   startZLevel?: number;
   endZLevel?: number;
+  oneWay?: boolean;
+  oneWayDirection?: OneWayDirection;
   name?: string;
   routeClass?: RouteClass;
   routeNumber?: string;
@@ -46,6 +50,8 @@ export type RoadDefaults = Pick<
   | "kind"
   | "startZLevel"
   | "endZLevel"
+  | "oneWay"
+  | "oneWayDirection"
   | "name"
   | "routeClass"
   | "routeNumber"

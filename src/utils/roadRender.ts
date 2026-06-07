@@ -20,7 +20,19 @@ export type RoadMarkingMask = {
 type RenderableRoad = Pick<Road, "id" | "roadType" | "width" | "lanes" | "divider"> & {
   sourceRoadId?: string;
   sourceKind?: "standard" | "connector";
+  oneWay?: boolean;
+  oneWayDirection?: "forward" | "reverse";
   points: Point[];
+};
+
+export type RoadArrowLayer = {
+  points: number[];
+  stroke: string;
+  fill: string;
+  strokeWidth: number;
+  pointerLength: number;
+  pointerWidth: number;
+  opacity?: number;
 };
 
 export type JunctionRenderStyle = {
@@ -120,6 +132,90 @@ function splitPolylineByMasks(points: Point[], masks: RoadMarkingMask[]): Point[
   if (currentChunk.length > 1) chunks.push(currentChunk);
 
   return chunks;
+}
+
+function getPointAtDistance(points: Point[], distanceAlong: number): { point: Point; angle: number } | null {
+  if (points.length < 2) return null;
+
+  let walked = 0;
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const from = points[index];
+    const to = points[index + 1];
+    const segmentLength = distance(from, to);
+    if (segmentLength === 0) continue;
+
+    if (walked + segmentLength >= distanceAlong) {
+      const t = (distanceAlong - walked) / segmentLength;
+      return {
+        point: {
+          x: from.x + (to.x - from.x) * t,
+          y: from.y + (to.y - from.y) * t,
+        },
+        angle: Math.atan2(to.y - from.y, to.x - from.x),
+      };
+    }
+
+    walked += segmentLength;
+  }
+
+  const from = points[points.length - 2];
+  const to = points[points.length - 1];
+  return {
+    point: to,
+    angle: Math.atan2(to.y - from.y, to.x - from.x),
+  };
+}
+
+export function getOneWayArrowLayers(
+  road: RenderableRoad,
+  renderPoints: Point[],
+  masks: RoadMarkingMask[] = [],
+): RoadArrowLayer[] {
+  if (!road.oneWay || renderPoints.length < 2) return [];
+
+  const style = getRoadStyle(road);
+  const spacing = 120;
+  const arrowLength = Math.max(14, Math.min(30, road.width * 0.85));
+  const layers: RoadArrowLayer[] = [];
+  const arrowPaths = road.divider
+    ? [offsetPolyline(renderPoints, -road.width * 0.25), offsetPolyline(renderPoints, road.width * 0.25)]
+    : [renderPoints];
+
+  arrowPaths.forEach((arrowPath) => {
+    const totalLength = arrowPath.slice(0, -1).reduce((total, point, index) => {
+      return total + distance(point, arrowPath[index + 1]);
+    }, 0);
+    if (totalLength < 48) return;
+
+    const firstDistance = Math.min(spacing * 0.7, totalLength / 2);
+
+    for (let distanceAlong = firstDistance; distanceAlong < totalLength; distanceAlong += spacing) {
+      const sampled = getPointAtDistance(arrowPath, distanceAlong);
+      if (!sampled || pointIsMasked(sampled.point, masks)) continue;
+
+      const angle = sampled.angle + (road.oneWayDirection === "reverse" ? Math.PI : 0);
+      const dx = Math.cos(angle) * arrowLength;
+      const dy = Math.sin(angle) * arrowLength;
+
+      layers.push({
+        points: [
+          sampled.point.x - dx / 2,
+          sampled.point.y - dy / 2,
+          sampled.point.x + dx / 2,
+          sampled.point.y + dy / 2,
+        ],
+        stroke: style.laneMarking,
+        fill: style.laneMarking,
+        strokeWidth: Math.max(1.8, Math.min(3.2, road.width * 0.11)),
+        pointerLength: Math.max(5, Math.min(9, road.width * 0.28)),
+        pointerWidth: Math.max(5, Math.min(10, road.width * 0.32)),
+        opacity: 0.9,
+      });
+    }
+  });
+
+  return layers;
 }
 
 export function getLaneMarkingLayers(

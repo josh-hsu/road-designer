@@ -53,7 +53,7 @@ npm run tauri build
 - Press `Esc` to cancel the current road.
 - Use `Select` to pick an existing road.
 - Drag selected node handles to reshape a road.
-- Edit `roadType`, `width`, `lanes`, `divider`, and `zLevel` in the right properties panel.
+- Edit `roadType`, `width`, `lanes`, `divider`, `oneWay`, direction, and `zLevel` in the right properties panel.
 - Set `Road kind = Connector` for ramp roads that connect endpoints to roads on different `zLevel` values.
 - For connector roads, set `Start zLevel` and `End zLevel` to control which layer each endpoint joins.
 - Use `Export JSON` to save the current project.
@@ -98,6 +98,8 @@ type RoadType = "local" | "arterial";
 
 type RoadKind = "standard" | "connector";
 
+type OneWayDirection = "forward" | "reverse";
+
 type RouteClass =
   | "none"
   | "national_freeway"
@@ -116,6 +118,8 @@ type Road = {
   kind?: RoadKind;
   startZLevel?: number;
   endZLevel?: number;
+  oneWay?: boolean;
+  oneWayDirection?: OneWayDirection;
   name?: string;
   routeClass?: RouteClass;
   routeNumber?: string;

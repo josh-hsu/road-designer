@@ -20,6 +20,10 @@ function isValidRoadKind(value: unknown): boolean {
   return value === undefined || value === "standard" || value === "connector";
 }
 
+function isValidOneWayDirection(value: unknown): boolean {
+  return value === undefined || value === "forward" || value === "reverse";
+}
+
 function validateProjectData(value: unknown): ProjectData {
   if (!value || typeof value !== "object") {
     throw new Error("JSON root must be an object.");
@@ -43,6 +47,8 @@ function validateProjectData(value: unknown): ProjectData {
       !isValidRoadKind(road.kind) ||
       (road.startZLevel !== undefined && typeof road.startZLevel !== "number") ||
       (road.endZLevel !== undefined && typeof road.endZLevel !== "number") ||
+      (road.oneWay !== undefined && typeof road.oneWay !== "boolean") ||
+      !isValidOneWayDirection(road.oneWayDirection) ||
       (road.name !== undefined && typeof road.name !== "string") ||
       !isValidRouteClass(road.routeClass) ||
       (road.routeNumber !== undefined && typeof road.routeNumber !== "string") ||
@@ -60,6 +66,8 @@ function validateProjectData(value: unknown): ProjectData {
       kind: road.kind ?? "standard",
       startZLevel: road.startZLevel ?? road.zLevel,
       endZLevel: road.endZLevel ?? road.zLevel,
+      oneWay: road.oneWay ?? false,
+      oneWayDirection: road.oneWayDirection ?? "forward",
       name: road.name ?? "",
       routeClass: road.routeClass ?? "none",
       routeNumber: road.routeNumber ?? "",

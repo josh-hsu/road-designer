@@ -1,8 +1,8 @@
-import { Circle, Group, Line } from "react-konva";
+import { Arrow, Circle, Group, Line } from "react-konva";
 import type { Point, Road } from "../types/road";
 import { getRoadStyle } from "../utils/roadStyle";
 import { flattenPoints, getRoadRenderPoints } from "../utils/roadGeometry";
-import { getDividerLayers, getLaneMarkingLayers, getRoadLayerStyles } from "../utils/roadRender";
+import { getDividerLayers, getLaneMarkingLayers, getOneWayArrowLayers, getRoadLayerStyles } from "../utils/roadRender";
 import type { RoadMarkingMask } from "../utils/roadRender";
 import type { SnapTarget } from "../utils/snap";
 import type { VisualRoadSegment } from "../utils/visualRoadSegments";
@@ -47,6 +47,7 @@ export function RoadShape({
   const roadLayers = getRoadLayerStyles(road, points, isSelected);
   const laneLayers = getLaneMarkingLayers(road, renderPoints, markingMasks);
   const dividerLayers = getDividerLayers(road, renderPoints, markingMasks);
+  const arrowLayers = getOneWayArrowLayers(road, renderPoints, markingMasks);
   const selectableRoadId = "sourceRoadId" in road ? road.sourceRoadId : road.id;
   const selectRoad = () => {
     if (canSelect) onSelect(selectableRoadId);
@@ -97,6 +98,22 @@ export function RoadShape({
             strokeWidth={dividerLayer.strokeWidth}
             dash={dividerLayer.dash}
             opacity={dividerLayer.opacity}
+            lineCap="round"
+            lineJoin="round"
+            listening={false}
+          />
+        ))}
+      {renderPhase === "markings" &&
+        arrowLayers.map((arrowLayer, index) => (
+          <Arrow
+            key={`one-way-${index}`}
+            points={arrowLayer.points}
+            stroke={arrowLayer.stroke}
+            fill={arrowLayer.fill}
+            strokeWidth={arrowLayer.strokeWidth}
+            pointerLength={arrowLayer.pointerLength}
+            pointerWidth={arrowLayer.pointerWidth}
+            opacity={arrowLayer.opacity}
             lineCap="round"
             lineJoin="round"
             listening={false}

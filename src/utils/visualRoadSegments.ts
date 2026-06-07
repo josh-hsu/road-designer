@@ -1,4 +1,4 @@
-import type { Point, Road, RoadGeometryMode, RoadType } from "../types/road";
+import type { OneWayDirection, Point, Road, RoadGeometryMode, RoadType } from "../types/road";
 import { getRoadRenderPoints } from "./roadGeometry";
 
 export type VisualRoadSegment = {
@@ -11,6 +11,8 @@ export type VisualRoadSegment = {
   width: number;
   lanes: number;
   divider: boolean;
+  oneWay?: boolean;
+  oneWayDirection?: OneWayDirection;
   zLevel: number;
   geometryMode: Extract<RoadGeometryMode, "polyline">;
   suppressStartCap?: boolean;
@@ -83,6 +85,8 @@ function createStandardSegment(road: Road): VisualRoadSegment {
     width: road.width,
     lanes: road.lanes,
     divider: road.divider,
+    oneWay: road.oneWay,
+    oneWayDirection: road.oneWayDirection,
     zLevel: road.zLevel,
     geometryMode: "polyline",
     participatesInIntersection: true,
@@ -100,6 +104,8 @@ function createConnectorSegment(road: Road, connectorPart: "start" | "end", poin
     width: road.width,
     lanes: road.lanes,
     divider: road.divider,
+    oneWay: road.oneWay,
+    oneWayDirection: road.oneWayDirection,
     zLevel: connectorPart === "start" ? road.startZLevel ?? road.zLevel : road.endZLevel ?? road.zLevel,
     geometryMode: "polyline",
     suppressEndCap: connectorPart === "start",
