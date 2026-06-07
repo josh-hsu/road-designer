@@ -23,6 +23,7 @@ type CanvasEditorProps = {
   selectedRoadId: string | null;
   draftPoints: Point[];
   showGrid: boolean;
+  showDebugMasks: boolean;
   onCanvasPoint: (point: Point) => void;
   onAdoptRoadDefaults: (roadId: string) => void;
   onSelectRoad: (roadId: string | null) => void;
@@ -155,6 +156,7 @@ export function CanvasEditor({
   selectedRoadId,
   draftPoints,
   showGrid,
+  showDebugMasks,
   onCanvasPoint,
   onAdoptRoadDefaults,
   onSelectRoad,
@@ -461,30 +463,31 @@ export function CanvasEditor({
                     listening={false}
                   />
                 ))}
-                {levelIntersections.flatMap((intersection) =>
-                  level.segments
-                    .filter((road) => intersection.roadIds.includes(road.sourceRoadId))
-                    .map((road) => {
-                      const maskSize = getIntersectionMaskSize(intersection, road, level.segments);
+                {showDebugMasks &&
+                  levelIntersections.flatMap((intersection) =>
+                    level.segments
+                      .filter((road) => intersection.roadIds.includes(road.sourceRoadId))
+                      .map((road) => {
+                        const maskSize = getIntersectionMaskSize(intersection, road, level.segments);
 
-                      return (
-                        <Rect
-                          key={`intersection-mask-outline-${intersection.id}-${road.id}`}
-                          x={intersection.point.x}
-                          y={intersection.point.y}
-                          width={maskSize * 2}
-                          height={maskSize * 2}
-                          offsetX={maskSize}
-                          offsetY={maskSize}
-                          stroke="#ef4444"
-                          strokeWidth={1.5}
-                          dash={[6, 4]}
-                          opacity={0.9}
-                          listening={false}
-                        />
-                      );
-                    }),
-                )}
+                        return (
+                          <Rect
+                            key={`intersection-mask-outline-${intersection.id}-${road.id}`}
+                            x={intersection.point.x}
+                            y={intersection.point.y}
+                            width={maskSize * 2}
+                            height={maskSize * 2}
+                            offsetX={maskSize}
+                            offsetY={maskSize}
+                            stroke="#ef4444"
+                            strokeWidth={1.5}
+                            dash={[6, 4]}
+                            opacity={0.9}
+                            listening={false}
+                          />
+                        );
+                      }),
+                  )}
                 {level.segments.map((road) => (
                   <RoadShape
                     key={`markings-${road.id}`}

@@ -9,6 +9,7 @@ import { exportProjectData, importProjectDataFromFile, importProjectDataWithDial
 export default function App() {
   const [mode, setMode] = useState<ToolMode>("select");
   const [showGrid, setShowGrid] = useState(true);
+  const [showDebugMasks, setShowDebugMasks] = useState(false);
   const browserImportRef = useRef<HTMLInputElement | null>(null);
   const roadStore = useRoadStore();
   const { clearDraft, deleteRoad, finishDraft, redo, selectedRoadId, undo } = roadStore;
@@ -93,6 +94,7 @@ export default function App() {
         mode={mode}
         drawDefaults={roadStore.drawDefaults}
         showGrid={showGrid}
+        showDebugMasks={showDebugMasks}
         onModeChange={setMode}
         onDrawRoadTypeChange={roadStore.setDrawType}
         onDrawPresetSelect={(toolMode, preset) => {
@@ -103,6 +105,7 @@ export default function App() {
           setMode(toolMode);
         }}
         onShowGridChange={setShowGrid}
+        onShowDebugMasksChange={setShowDebugMasks}
         onExport={handleExport}
         onImportClick={handleImportClick}
       />
@@ -125,6 +128,7 @@ export default function App() {
         selectedRoadId={roadStore.selectedRoadId}
         draftPoints={roadStore.draftPoints}
         showGrid={showGrid}
+        showDebugMasks={showDebugMasks}
         onCanvasPoint={roadStore.addDraftPoint}
         onAdoptRoadDefaults={roadStore.adoptRoadDefaults}
         onSelectRoad={roadStore.selectRoad}
