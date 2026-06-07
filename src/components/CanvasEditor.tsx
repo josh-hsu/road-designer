@@ -131,6 +131,24 @@ function getConnectorSplitPatch(
   };
 }
 
+function getIntersectionMaskSize(
+  intersection: { roadIds: string[]; radius: number },
+  road: VisualRoadSegment,
+  levelSegments: VisualRoadSegment[],
+): number {
+  const crossingRoads = levelSegments.filter((segment) => {
+    return intersection.roadIds.includes(segment.sourceRoadId) && segment.sourceRoadId !== road.sourceRoadId;
+  });
+
+  if (crossingRoads.length === 0) return intersection.radius;
+
+  const widestCrossingRoad = crossingRoads.reduce((widest, segment) =>
+    segment.width > widest.width ? segment : widest,
+  );
+
+  return widestCrossingRoad.width / 2 + 2;
+}
+
 export function CanvasEditor({
   mode,
   roads,
@@ -404,21 +422,27 @@ export function CanvasEditor({
                   />
                 ))}
                 {endpointJunctions.map((junction) => (
-                  <Circle
+                  <Rect
                     key={`junction-outer-${junction.x}-${junction.y}`}
                     x={junction.x}
                     y={junction.y}
-                    radius={junction.outerRadius}
+                    width={junction.outerSize}
+                    height={junction.outerSize}
+                    offsetX={junction.outerSize / 2}
+                    offsetY={junction.outerSize / 2}
                     fill={junction.outer}
                     listening={false}
                   />
                 ))}
                 {endpointJunctions.map((junction) => (
-                  <Circle
+                  <Rect
                     key={`junction-body-${junction.x}-${junction.y}`}
                     x={junction.x}
                     y={junction.y}
-                    radius={junction.bodyRadius}
+                    width={junction.bodySize}
+                    height={junction.bodySize}
+                    offsetX={junction.bodySize / 2}
+                    offsetY={junction.bodySize / 2}
                     fill={junction.body}
                     listening={false}
                   />
@@ -437,6 +461,30 @@ export function CanvasEditor({
                     listening={false}
                   />
                 ))}
+                {levelIntersections.flatMap((intersection) =>
+                  level.segments
+                    .filter((road) => intersection.roadIds.includes(road.sourceRoadId))
+                    .map((road) => {
+                      const maskSize = getIntersectionMaskSize(intersection, road, level.segments);
+
+                      return (
+                        <Rect
+                          key={`intersection-mask-outline-${intersection.id}-${road.id}`}
+                          x={intersection.point.x}
+                          y={intersection.point.y}
+                          width={maskSize * 2}
+                          height={maskSize * 2}
+                          offsetX={maskSize}
+                          offsetY={maskSize}
+                          stroke="#ef4444"
+                          strokeWidth={1.5}
+                          dash={[6, 4]}
+                          opacity={0.9}
+                          listening={false}
+                        />
+                      );
+                    }),
+                )}
                 {level.segments.map((road) => (
                   <RoadShape
                     key={`markings-${road.id}`}
@@ -446,7 +494,8 @@ export function CanvasEditor({
                       .filter((intersection) => intersection.roadIds.includes(road.sourceRoadId))
                       .map((intersection) => ({
                         point: intersection.point,
-                        radius: intersection.radius + 4,
+                        radius: getIntersectionMaskSize(intersection, road, level.segments),
+                        shape: "square" as const,
                       }))}
                     isSelected={road.sourceRoadId === selectedRoadId}
                     canSelect={mode === "select" && !spacePressed && !isPanning}

@@ -14,6 +14,7 @@ export type RoadLayerStyle = {
 export type RoadMarkingMask = {
   point: Point;
   radius: number;
+  shape?: "circle" | "square";
 };
 
 type RenderableRoad = Pick<Road, "id" | "roadType" | "width" | "lanes" | "divider"> & {
@@ -26,8 +27,8 @@ export type JunctionRenderStyle = {
   x: number;
   y: number;
   roadIds: string[];
-  outerRadius: number;
-  bodyRadius: number;
+  outerSize: number;
+  bodySize: number;
   outer: string;
   body: string;
 };
@@ -90,7 +91,13 @@ function densifyPolyline(points: Point[], maxSegmentLength = 8): Point[] {
 }
 
 function pointIsMasked(point: Point, masks: RoadMarkingMask[]): boolean {
-  return masks.some((mask) => distance(point, mask.point) <= mask.radius);
+  return masks.some((mask) => {
+    if (mask.shape === "square") {
+      return Math.abs(point.x - mask.point.x) <= mask.radius && Math.abs(point.y - mask.point.y) <= mask.radius;
+    }
+
+    return distance(point, mask.point) <= mask.radius;
+  });
 }
 
 function splitPolylineByMasks(points: Point[], masks: RoadMarkingMask[]): Point[][] {
@@ -182,14 +189,14 @@ export function getEndpointJunctions(roads: VisualRoadSegment[]): JunctionRender
       const primaryRoad = [...connectedRoads].sort(compareRoadVisualPriority)[connectedRoads.length - 1] ?? widestRoad;
       const widestStyle = getRoadStyle(widestRoad);
       const primaryStyle = getRoadStyle(primaryRoad);
-      const outerRadius = (widestRoad.width + widestStyle.outerPadding) / 2;
+      const outerSize = widestRoad.width + widestStyle.outerPadding;
 
       return {
         x,
         y,
         roadIds: connectedRoads.map((road) => road.sourceRoadId),
-        outerRadius,
-        bodyRadius: outerRadius + 0.25,
+        outerSize,
+        bodySize: widestRoad.width,
         outer: primaryStyle.outer,
         body: primaryStyle.body,
       };
