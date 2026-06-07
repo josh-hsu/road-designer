@@ -127,6 +127,13 @@ export function CanvasEditor({
     () => [...roads].sort((a, b) => a.zLevel - b.zLevel),
     [roads],
   );
+  const controlRoads = useMemo(
+    () => [
+      ...sortedRoads.filter((road) => road.id !== selectedRoadId),
+      ...sortedRoads.filter((road) => road.id === selectedRoadId),
+    ],
+    [selectedRoadId, sortedRoads],
+  );
   const roadLevels = useMemo(() => groupRoadsByLevel(sortedRoads), [sortedRoads]);
   const intersections = useMemo(() => getRoadIntersections(sortedRoads), [sortedRoads]);
 
@@ -343,7 +350,7 @@ export function CanvasEditor({
               </Group>
             );
           })}
-          {sortedRoads.map((road) => (
+          {controlRoads.map((road) => (
             <RoadShape
               key={`controls-${road.id}`}
               road={road}
