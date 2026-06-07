@@ -56,6 +56,33 @@ function isRoadEndpoint(road: Road, pointIndex: number): boolean {
   return pointIndex === 0 || pointIndex === road.points.length - 1;
 }
 
+function distanceBetween(a: Point, b: Point): number {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function distanceToSegment(point: Point, from: Point, to: Point): number {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const lengthSquared = dx * dx + dy * dy;
+
+  if (lengthSquared === 0) return distanceBetween(point, from);
+
+  const t = Math.max(0, Math.min(1, ((point.x - from.x) * dx + (point.y - from.y) * dy) / lengthSquared));
+  return distanceBetween(point, {
+    x: from.x + dx * t,
+    y: from.y + dy * t,
+  });
+}
+
+function distanceToRoad(point: Point, road: Road): number {
+  const renderPoints = getRoadRenderPoints(road.points, road.geometryMode);
+  if (renderPoints.length === 0) return Number.POSITIVE_INFINITY;
+
+  return renderPoints.slice(0, -1).reduce((minimumDistance, from, index) => {
+    return Math.min(minimumDistance, distanceToSegment(point, from, renderPoints[index + 1]));
+  }, Number.POSITIVE_INFINITY);
+}
+
 export function CanvasEditor({
   mode,
   roads,
@@ -257,7 +284,23 @@ export function CanvasEditor({
         <Layer x={viewport.x} y={viewport.y} scaleX={viewport.scale} scaleY={viewport.scale}>
           {roadLevels.map((level) => {
             const levelIntersections = intersections.filter((intersection) => intersection.zLevel === level.zLevel);
-            const endpointJunctions = getEndpointJunctions(level.roads);
+            const endpointJunctions = getEndpointJunctions(level.roads).filter((junction) => {
+              const overlapsIntersection = levelIntersections.some((intersection) => {
+                return distanceBetween(junction, intersection.point) <= 8;
+              });
+              if (overlapsIntersection) return false;
+
+              const connectedRoads = level.roads.filter((road) => junction.roadIds.includes(road.id));
+              const primaryConnectedRoad =
+                [...connectedRoads].sort(compareRoadVisualPriority)[connectedRoads.length - 1] ?? connectedRoads[0];
+
+              return !level.roads.some((road) => {
+                if (!primaryConnectedRoad || junction.roadIds.includes(road.id)) return false;
+                if (compareRoadVisualPriority(road, primaryConnectedRoad) <= 0) return false;
+
+                return distanceToRoad(junction, road) <= road.width / 2 + 4;
+              });
+            });
 
             return (
               <Group key={`z-level-${level.zLevel}`}>

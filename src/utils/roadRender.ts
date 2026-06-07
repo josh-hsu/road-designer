@@ -18,6 +18,7 @@ export type RoadMarkingMask = {
 export type JunctionRenderStyle = {
   x: number;
   y: number;
+  roadIds: string[];
   outerRadius: number;
   bodyRadius: number;
   outer: string;
@@ -178,6 +179,7 @@ export function getEndpointJunctions(roads: Road[]): JunctionRenderStyle[] {
       return {
         x,
         y,
+        roadIds: connectedRoads.map((road) => road.id),
         outerRadius,
         bodyRadius: outerRadius + 0.25,
         outer: primaryStyle.outer,
