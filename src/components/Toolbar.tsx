@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { RoadDefaults, RoadType, ToolMode } from "../types/road";
 import { ROAD_TYPE_LABELS } from "../utils/roadStyle";
 
@@ -43,6 +44,8 @@ type ToolbarProps = {
   showGrid: boolean;
   keepDrawing: boolean;
   showDebugMasks: boolean;
+  transitColor: string;
+  transitPalette: string[];
   onModeChange: (mode: ToolMode) => void;
   onDrawRoadTypeChange: (roadType: RoadType) => void;
   onDrawPresetSelect: (
@@ -52,6 +55,8 @@ type ToolbarProps = {
   onShowGridChange: (showGrid: boolean) => void;
   onKeepDrawingChange: (keepDrawing: boolean) => void;
   onShowDebugMasksChange: (showDebugMasks: boolean) => void;
+  onTransitColorChange: (color: string) => void;
+  onAddTransitColor: (color: string) => void;
   onExport: () => void;
   onImportClick: () => void;
 };
@@ -119,21 +124,55 @@ function RoadPresetIcon({ preset, curved, roadType }: { preset: RoadPreset; curv
   );
 }
 
+function TransitToolIcon({
+  kind,
+  color,
+}: {
+  kind: "line" | "curve" | "station";
+  color: string;
+}) {
+  if (kind === "station") {
+    return (
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="10" fill="#ffffff" stroke={color} strokeWidth="4" />
+        <circle cx="16" cy="16" r="4.5" fill={color} />
+      </svg>
+    );
+  }
+
+  const path = kind === "curve" ? "M5 24 C10 7 22 7 27 24" : "M5 16 L27 16";
+
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <path d={path} fill="none" stroke="rgba(15,23,42,0.22)" strokeWidth="11" strokeLinecap="round" />
+      <path d={path} fill="none" stroke={color} strokeWidth="7" strokeLinecap="round" />
+      <circle cx="6" cy={kind === "curve" ? 23 : 16} r="2.5" fill="#ffffff" stroke={color} strokeWidth="1.5" />
+      <circle cx="26" cy={kind === "curve" ? 23 : 16} r="2.5" fill="#ffffff" stroke={color} strokeWidth="1.5" />
+    </svg>
+  );
+}
+
 export function Toolbar({
   mode,
   drawDefaults,
   showGrid,
   keepDrawing,
   showDebugMasks,
+  transitColor,
+  transitPalette,
   onModeChange,
   onDrawRoadTypeChange,
   onDrawPresetSelect,
   onShowGridChange,
   onKeepDrawingChange,
   onShowDebugMasksChange,
+  onTransitColorChange,
+  onAddTransitColor,
   onExport,
   onImportClick,
 }: ToolbarProps) {
+  const [newTransitColor, setNewTransitColor] = useState(transitColor);
+
   return (
     <aside className="toolbar">
       <div className="toolbar-title">Road Designer</div>
@@ -189,6 +228,65 @@ export function Toolbar({
               <span>{preset.label}</span>
             </button>
           ))}
+        </div>
+      </div>
+
+      <div className="tool-section">
+        <div className="tool-section-title">Transit</div>
+        <div className="transit-palette">
+          {transitPalette.map((color) => (
+            <button
+              key={color}
+              className={`color-swatch ${color === transitColor ? "active" : ""}`}
+              title={color}
+              aria-label={`Transit color ${color}`}
+              style={{ backgroundColor: color }}
+              onClick={() => onTransitColorChange(color)}
+            />
+          ))}
+        </div>
+        <div className="color-add-row">
+          <input
+            type="color"
+            value={newTransitColor}
+            onChange={(event) => {
+              setNewTransitColor(event.target.value);
+              onTransitColorChange(event.target.value);
+            }}
+            aria-label="New transit color"
+          />
+          <button type="button" onClick={() => onAddTransitColor(newTransitColor)}>
+            Add
+          </button>
+        </div>
+        <div className="preset-grid transit-tool-grid">
+          <button
+            className={`preset-button ${mode === "drawTransit" ? "active" : ""}`}
+            title="Transit line"
+            aria-label="Draw transit line"
+            onClick={() => onModeChange("drawTransit")}
+          >
+            <TransitToolIcon kind="line" color={transitColor} />
+            <span>Line</span>
+          </button>
+          <button
+            className={`preset-button ${mode === "drawTransitCurve" ? "active" : ""}`}
+            title="Curved transit line"
+            aria-label="Draw curved transit line"
+            onClick={() => onModeChange("drawTransitCurve")}
+          >
+            <TransitToolIcon kind="curve" color={transitColor} />
+            <span>Curve</span>
+          </button>
+          <button
+            className={`preset-button ${mode === "station" ? "active" : ""}`}
+            title="Station"
+            aria-label="Place station"
+            onClick={() => onModeChange("station")}
+          >
+            <TransitToolIcon kind="station" color={transitColor} />
+            <span>Station</span>
+          </button>
         </div>
       </div>
 

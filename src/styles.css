@@ -21,7 +21,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -144,6 +145,48 @@ button.active {
   color: #1d4ed8;
 }
 
+.transit-tool-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.transit-tool-grid .preset-button {
+  min-height: 56px;
+  padding: 5px;
+}
+
+.transit-tool-grid .preset-button span {
+  font-size: 8.8px;
+}
+
+.transit-palette {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.color-swatch {
+  min-height: 28px;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px #cbd5e1;
+}
+
+.color-swatch.active {
+  box-shadow: 0 0 0 2px #2563eb;
+}
+
+.color-add-row {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  gap: 6px;
+}
+
+.color-add-row input[type="color"] {
+  width: 42px;
+  min-height: 38px;
+  padding: 2px;
+}
+
 .toolbar-spacer {
   flex: 1;
 }
@@ -211,7 +254,8 @@ button.active {
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   width: 100%;
   min-height: 36px;
   border: 1px solid #cbd5e1;
@@ -220,6 +264,11 @@ button.active {
   padding: 6px 8px;
   color: #1f2937;
   font-weight: 500;
+}
+
+.field textarea {
+  min-height: 92px;
+  resize: vertical;
 }
 
 .checkbox-field {

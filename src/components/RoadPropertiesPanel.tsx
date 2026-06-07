@@ -1,13 +1,37 @@
 import type { ChangeEvent } from "react";
-import type { OneWayDirection, Road, RoadKind, RoadType, RouteClass } from "../types/road";
+import type { OneWayDirection, Road, RoadKind, RoadType, RouteClass, TransitStation } from "../types/road";
 import { ROAD_TYPE_LABELS } from "../utils/roadStyle";
 
 type RoadPropertiesPanelProps = {
   road: Road | null;
+  transitStation: TransitStation | null;
   onUpdateRoad: (roadId: string, patch: Partial<Omit<Road, "id">>) => void;
+  onUpdateTransitStation: (stationId: string, patch: Partial<Omit<TransitStation, "id">>) => void;
 };
 
-export function RoadPropertiesPanel({ road, onUpdateRoad }: RoadPropertiesPanelProps) {
+export function RoadPropertiesPanel({
+  road,
+  transitStation,
+  onUpdateRoad,
+  onUpdateTransitStation,
+}: RoadPropertiesPanelProps) {
+  if (transitStation) {
+    return (
+      <aside className="properties-panel">
+        <h2>Station</h2>
+        <div className="property-id">{transitStation.id}</div>
+
+        <label className="field">
+          <span>Station name</span>
+          <textarea
+            value={transitStation.name}
+            onChange={(event) => onUpdateTransitStation(transitStation.id, { name: event.target.value })}
+          />
+        </label>
+      </aside>
+    );
+  }
+
   if (!road) {
     return (
       <aside className="properties-panel">

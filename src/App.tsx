@@ -13,7 +13,18 @@ export default function App() {
   const [showDebugMasks, setShowDebugMasks] = useState(false);
   const browserImportRef = useRef<HTMLInputElement | null>(null);
   const roadStore = useRoadStore();
-  const { clearDraft, deleteRoad, finishDraft, redo, selectedRoadId, undo } = roadStore;
+  const {
+    clearDraft,
+    deleteRoad,
+    deleteTransitRoute,
+    deleteTransitStation,
+    finishDraft,
+    redo,
+    selectedRoadId,
+    selectedTransitRouteId,
+    selectedTransitStationId,
+    undo,
+  } = roadStore;
 
   const handleModeChange = (nextMode: ToolMode) => {
     if (nextMode === "select") {
@@ -24,6 +35,13 @@ export default function App() {
 
   const handleFinishDraft = (geometryMode: RoadGeometryMode) => {
     finishDraft(geometryMode);
+    if (!keepDrawing) {
+      setMode("select");
+    }
+  };
+
+  const handleFinishTransitDraft = (geometryMode: RoadGeometryMode) => {
+    roadStore.finishTransitDraft(geometryMode);
     if (!keepDrawing) {
       setMode("select");
     }
@@ -52,26 +70,58 @@ export default function App() {
         return;
       }
 
-      if (event.key === "Enter" && (mode === "draw" || mode === "drawCurve")) {
-        handleFinishDraft(mode === "drawCurve" ? "bezier" : "polyline");
+      if (event.key === "Enter" && (mode === "draw" || mode === "drawCurve" || mode === "drawTransit" || mode === "drawTransitCurve")) {
+        const geometryMode = mode === "drawCurve" || mode === "drawTransitCurve" ? "bezier" : "polyline";
+        if (mode === "drawTransit" || mode === "drawTransitCurve") {
+          handleFinishTransitDraft(geometryMode);
+        } else {
+          handleFinishDraft(geometryMode);
+        }
         event.preventDefault();
       }
 
-      if (event.key === "Escape" && (mode === "draw" || mode === "drawCurve")) {
+      if (event.key === "Escape" && (mode === "draw" || mode === "drawCurve" || mode === "drawTransit" || mode === "drawTransitCurve" || mode === "station")) {
         clearDraft();
         setMode("select");
         event.preventDefault();
       }
 
-      if (mode === "select" && selectedRoadId && (event.key === "Delete" || event.key === "Backspace")) {
-        deleteRoad(selectedRoadId);
+      if (mode === "select" && (event.key === "Delete" || event.key === "Backspace")) {
+        if (selectedRoadId) {
+          deleteRoad(selectedRoadId);
+          event.preventDefault();
+          return;
+        }
+        if (selectedTransitRouteId) {
+          deleteTransitRoute(selectedTransitRouteId);
+          event.preventDefault();
+          return;
+        }
+        if (selectedTransitStationId) {
+          deleteTransitStation(selectedTransitStationId);
+          event.preventDefault();
+          return;
+        }
         event.preventDefault();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [clearDraft, deleteRoad, handleFinishDraft, mode, redo, selectedRoadId, undo]);
+  }, [
+    clearDraft,
+    deleteRoad,
+    deleteTransitRoute,
+    deleteTransitStation,
+    handleFinishDraft,
+    handleFinishTransitDraft,
+    mode,
+    redo,
+    selectedRoadId,
+    selectedTransitRouteId,
+    selectedTransitStationId,
+    undo,
+  ]);
 
   const handleImportClick = async () => {
     try {
@@ -110,6 +160,8 @@ export default function App() {
         showGrid={showGrid}
         keepDrawing={keepDrawing}
         showDebugMasks={showDebugMasks}
+        transitColor={roadStore.transitColor}
+        transitPalette={roadStore.transitPalette}
         onModeChange={handleModeChange}
         onDrawRoadTypeChange={roadStore.setDrawType}
         onDrawPresetSelect={(toolMode, preset) => {
@@ -122,6 +174,8 @@ export default function App() {
         onShowGridChange={setShowGrid}
         onKeepDrawingChange={setKeepDrawing}
         onShowDebugMasksChange={setShowDebugMasks}
+        onTransitColorChange={roadStore.setTransitColor}
+        onAddTransitColor={roadStore.addTransitColor}
         onExport={handleExport}
         onImportClick={handleImportClick}
       />
@@ -141,19 +195,37 @@ export default function App() {
       <CanvasEditor
         mode={mode}
         roads={roadStore.roads}
+        transitRoutes={roadStore.transitRoutes}
+        transitStations={roadStore.transitStations}
         selectedRoadId={roadStore.selectedRoadId}
+        selectedTransitRouteId={roadStore.selectedTransitRouteId}
+        selectedTransitStationId={roadStore.selectedTransitStationId}
         draftPoints={roadStore.draftPoints}
+        transitColor={roadStore.transitColor}
         showGrid={showGrid}
         showDebugMasks={showDebugMasks}
         onCanvasPoint={roadStore.addDraftPoint}
         onFinishDraft={handleFinishDraft}
+        onFinishTransitDraft={handleFinishTransitDraft}
+        onAddTransitStation={roadStore.addTransitStation}
         onAdoptRoadDefaults={roadStore.adoptRoadDefaults}
         onSelectRoad={roadStore.selectRoad}
+        onSelectTransitRoute={roadStore.selectTransitRoute}
+        onSelectTransitStation={roadStore.selectTransitStation}
         onRoadPointDragStart={roadStore.beginRoadPointDrag}
         onRoadPointDragMove={roadStore.previewRoadPointDrag}
         onRoadPointDragEnd={roadStore.endRoadPointDrag}
+        onTransitRoutePointDragMove={roadStore.previewTransitRoutePointDrag}
+        onTransitRoutePointDragEnd={roadStore.endTransitRoutePointDrag}
+        onTransitStationDragMove={roadStore.previewTransitStationDrag}
+        onTransitStationDragEnd={roadStore.endTransitStationDrag}
       />
-      <RoadPropertiesPanel road={roadStore.selectedRoad} onUpdateRoad={roadStore.updateRoad} />
+      <RoadPropertiesPanel
+        road={roadStore.selectedRoad}
+        transitStation={roadStore.selectedTransitStation}
+        onUpdateRoad={roadStore.updateRoad}
+        onUpdateTransitStation={roadStore.updateTransitStation}
+      />
     </div>
   );
 }

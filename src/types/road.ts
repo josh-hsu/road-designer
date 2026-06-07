@@ -13,6 +13,19 @@ export type OneWayDirection = "forward" | "reverse";
 
 export type RouteClass = "none" | "national_freeway" | "expressway" | "provincial_highway";
 
+export type TransitRoute = {
+  id: string;
+  points: Point[];
+  geometryMode?: RoadGeometryMode;
+  color: string;
+};
+
+export type TransitStation = {
+  id: string;
+  point: Point;
+  name: string;
+};
+
 export type Road = {
   id: string;
   points: Point[];
@@ -36,9 +49,11 @@ export type Road = {
 export type ProjectData = {
   version: 1;
   roads: Road[];
+  transitRoutes?: TransitRoute[];
+  transitStations?: TransitStation[];
 };
 
-export type ToolMode = "select" | "draw" | "drawCurve";
+export type ToolMode = "select" | "draw" | "drawCurve" | "drawTransit" | "drawTransitCurve" | "station";
 
 export type RoadDefaults = Pick<
   Road,

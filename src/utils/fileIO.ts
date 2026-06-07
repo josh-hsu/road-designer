@@ -58,6 +58,29 @@ function validateProjectData(value: unknown): ProjectData {
     }
   });
 
+  (project.transitRoutes ?? []).forEach((route, index) => {
+    if (
+      typeof route.id !== "string" ||
+      !Array.isArray(route.points) ||
+      (route.geometryMode !== undefined && route.geometryMode !== "polyline" && route.geometryMode !== "bezier") ||
+      typeof route.color !== "string"
+    ) {
+      throw new Error(`Invalid transit route at index ${index}.`);
+    }
+  });
+
+  (project.transitStations ?? []).forEach((station, index) => {
+    if (
+      typeof station.id !== "string" ||
+      !station.point ||
+      typeof station.point.x !== "number" ||
+      typeof station.point.y !== "number" ||
+      typeof station.name !== "string"
+    ) {
+      throw new Error(`Invalid transit station at index ${index}.`);
+    }
+  });
+
   return {
     version: 1,
     roads: project.roads.map((road) => ({
@@ -72,6 +95,15 @@ function validateProjectData(value: unknown): ProjectData {
       routeClass: road.routeClass ?? "none",
       routeNumber: road.routeNumber ?? "",
       showLabel: road.showLabel ?? true,
+    })),
+    transitRoutes: (project.transitRoutes ?? []).map((route) => ({
+      ...route,
+      geometryMode: route.geometryMode ?? "polyline",
+      color: route.color ?? "#22c55e",
+    })),
+    transitStations: (project.transitStations ?? []).map((station) => ({
+      ...station,
+      name: station.name ?? "Station",
     })),
   };
 }

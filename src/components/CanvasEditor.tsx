@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Circle, Group, Layer, Line, Rect, Stage, Text } from "react-konva";
 import type Konva from "konva";
-import type { Point, Road, RoadGeometryMode, ToolMode } from "../types/road";
+import type { Point, Road, RoadGeometryMode, ToolMode, TransitRoute, TransitStation } from "../types/road";
 import { GridLayer } from "./GridLayer";
 import { RoadLabelLayer } from "./RoadLabelLayer";
 import { RoadShape } from "./RoadShape";
 import { StatusBar } from "./StatusBar";
+import { TransitLayer } from "./TransitLayer";
 import { useViewportStore } from "../state/viewportStore";
 import { getRoadIntersections } from "../utils/intersections";
 import { flattenPoints, getRoadRenderPoints } from "../utils/roadGeometry";
@@ -20,17 +21,30 @@ import { screenToWorld } from "../utils/viewport";
 type CanvasEditorProps = {
   mode: ToolMode;
   roads: Road[];
+  transitRoutes: TransitRoute[];
+  transitStations: TransitStation[];
   selectedRoadId: string | null;
+  selectedTransitRouteId: string | null;
+  selectedTransitStationId: string | null;
   draftPoints: Point[];
+  transitColor: string;
   showGrid: boolean;
   showDebugMasks: boolean;
   onCanvasPoint: (point: Point) => void;
   onFinishDraft: (geometryMode: RoadGeometryMode) => void;
+  onFinishTransitDraft: (geometryMode: RoadGeometryMode) => void;
+  onAddTransitStation: (point: Point) => void;
   onAdoptRoadDefaults: (roadId: string) => void;
   onSelectRoad: (roadId: string | null) => void;
+  onSelectTransitRoute: (routeId: string | null) => void;
+  onSelectTransitStation: (stationId: string | null) => void;
   onRoadPointDragStart: () => void;
   onRoadPointDragMove: (roadId: string, pointIndex: number, point: Point) => void;
   onRoadPointDragEnd: (roadId: string, pointIndex: number, point: Point) => void;
+  onTransitRoutePointDragMove: (routeId: string, pointIndex: number, point: Point) => void;
+  onTransitRoutePointDragEnd: (routeId: string, pointIndex: number, point: Point) => void;
+  onTransitStationDragMove: (stationId: string, point: Point) => void;
+  onTransitStationDragEnd: (stationId: string, point: Point) => void;
 };
 
 function getScreenPoint(stage: Konva.Stage): Point {
@@ -154,17 +168,30 @@ function getIntersectionMaskSize(
 export function CanvasEditor({
   mode,
   roads,
+  transitRoutes,
+  transitStations,
   selectedRoadId,
+  selectedTransitRouteId,
+  selectedTransitStationId,
   draftPoints,
+  transitColor,
   showGrid,
   showDebugMasks,
   onCanvasPoint,
   onFinishDraft,
+  onFinishTransitDraft,
+  onAddTransitStation,
   onAdoptRoadDefaults,
   onSelectRoad,
+  onSelectTransitRoute,
+  onSelectTransitStation,
   onRoadPointDragStart,
   onRoadPointDragMove,
   onRoadPointDragEnd,
+  onTransitRoutePointDragMove,
+  onTransitRoutePointDragEnd,
+  onTransitStationDragMove,
+  onTransitStationDragEnd,
 }: CanvasEditorProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ width: 800, height: 600 });
@@ -244,6 +271,32 @@ export function CanvasEditor({
     exclude?: { roadId: string; pointIndex: number },
   ): { point: Point; target: SnapTarget | null } => snapPointToRoadNode(point, roads, exclude);
 
+  const getSnappedTransitPoint = (point: Point): { point: Point; target: SnapTarget | null } => {
+    let nearest: SnapTarget | null = null;
+    let nearestPoint: Point | null = null;
+
+    transitRoutes.forEach((route) => {
+      route.points.forEach((routePoint, pointIndex) => {
+        const distance = Math.hypot(point.x - routePoint.x, point.y - routePoint.y);
+        if (distance > 12) return;
+        if (!nearest || distance < nearest.distance) {
+          nearestPoint = routePoint;
+          nearest = {
+            roadId: route.id,
+            pointIndex,
+            point: routePoint,
+            distance,
+          };
+        }
+      });
+    });
+
+    return {
+      point: nearestPoint ?? point,
+      target: nearest,
+    };
+  };
+
   const getWorldPoint = (stage: Konva.Stage): Point => {
     const point = screenToWorld(getScreenPoint(stage), viewport);
     return {
@@ -264,13 +317,25 @@ export function CanvasEditor({
       return;
     }
 
-    if (mode === "draw" || mode === "drawCurve") {
+    if (mode === "station") {
+      onAddTransitStation(getWorldPoint(stage));
+      return;
+    }
+
+    if (mode === "draw" || mode === "drawCurve" || mode === "drawTransit" || mode === "drawTransitCurve") {
       if (mode === "drawCurve" && draftPoints.length >= 4) return;
+      if (mode === "drawTransitCurve" && draftPoints.length >= 4) return;
 
       const point = getWorldPoint(stage);
-      const shouldSnap = mode === "draw" || draftPoints.length === 0 || draftPoints.length === 3;
-      const snapped = shouldSnap ? getSnappedPoint(point) : { point, target: null };
-      if (draftPoints.length === 0 && snapped.target) {
+      const isTransitMode = mode === "drawTransit" || mode === "drawTransitCurve";
+      const isCurveMode = mode === "drawCurve" || mode === "drawTransitCurve";
+      const shouldSnap = !isCurveMode || draftPoints.length === 0 || draftPoints.length === 3;
+      const snapped = shouldSnap
+        ? isTransitMode
+          ? getSnappedTransitPoint(point)
+          : getSnappedPoint(point)
+        : { point, target: null };
+      if (!isTransitMode && draftPoints.length === 0 && snapped.target) {
         const sourceRoad = roads.find((road) => road.id === snapped.target?.roadId);
         if (sourceRoad && isRoadEndpoint(sourceRoad, snapped.target.pointIndex)) {
           onAdoptRoadDefaults(sourceRoad.id);
@@ -278,14 +343,20 @@ export function CanvasEditor({
       }
       setSnapPreview(snapped.target);
       onCanvasPoint(snapped.point);
-      if (draftPoints.length + 1 >= (mode === "drawCurve" ? 4 : 2)) {
-        onFinishDraft(mode === "drawCurve" ? "bezier" : "polyline");
+      if (draftPoints.length + 1 >= (isCurveMode ? 4 : 2)) {
+        if (isTransitMode) {
+          onFinishTransitDraft(isCurveMode ? "bezier" : "polyline");
+        } else {
+          onFinishDraft(isCurveMode ? "bezier" : "polyline");
+        }
       }
       return;
     }
 
     if (event.target === stage || event.target.name() === "canvas-background") {
       onSelectRoad(null);
+      onSelectTransitRoute(null);
+      onSelectTransitStation(null);
     }
   };
 
@@ -305,14 +376,16 @@ export function CanvasEditor({
       return;
     }
 
-    if (mode !== "draw" && mode !== "drawCurve") {
+    if (mode !== "draw" && mode !== "drawCurve" && mode !== "drawTransit" && mode !== "drawTransitCurve") {
       if (!snapPreview) return;
       setSnapPreview(null);
       return;
     }
 
-    const shouldSnap = mode === "draw" || draftPoints.length === 0 || draftPoints.length === 3;
-    setSnapPreview(shouldSnap ? getSnappedPoint(worldPoint).target : null);
+    const isTransitMode = mode === "drawTransit" || mode === "drawTransitCurve";
+    const isCurveMode = mode === "drawCurve" || mode === "drawTransitCurve";
+    const shouldSnap = !isCurveMode || draftPoints.length === 0 || draftPoints.length === 3;
+    setSnapPreview(shouldSnap ? (isTransitMode ? getSnappedTransitPoint(worldPoint).target : getSnappedPoint(worldPoint).target) : null);
   };
 
   const handleStageMouseUp = () => {
@@ -330,7 +403,8 @@ export function CanvasEditor({
     zoomAt(getScreenPoint(stage), viewport.scale * zoomFactor);
   };
 
-  const draftRenderPoints = mode === "drawCurve" ? getRoadRenderPoints(draftPoints, "bezier") : draftPoints;
+  const isTransitDraft = mode === "drawTransit" || mode === "drawTransitCurve";
+  const draftRenderPoints = mode === "drawCurve" || mode === "drawTransitCurve" ? getRoadRenderPoints(draftPoints, "bezier") : draftPoints;
 
   return (
     <main className={`canvas-shell ${isPanning || spacePressed ? "is-panning" : ""}`} ref={containerRef}>
@@ -534,12 +608,26 @@ export function CanvasEditor({
             />
           ))}
           <RoadLabelLayer roads={sortedRoads} zoom={viewport.scale} />
+          <TransitLayer
+            routes={transitRoutes}
+            stations={transitStations}
+            selectedRouteId={selectedTransitRouteId}
+            selectedStationId={selectedTransitStationId}
+            canSelect={mode === "select" && !spacePressed && !isPanning}
+            onSelectRoute={onSelectTransitRoute}
+            onSelectStation={onSelectTransitStation}
+            onDragStart={onRoadPointDragStart}
+            onRoutePointDragMove={onTransitRoutePointDragMove}
+            onRoutePointDragEnd={onTransitRoutePointDragEnd}
+            onStationDragMove={onTransitStationDragMove}
+            onStationDragEnd={onTransitStationDragEnd}
+          />
           {draftPoints.length > 0 && (
             <>
-              {mode === "drawCurve" && (
+              {(mode === "drawCurve" || mode === "drawTransitCurve") && (
                 <Line
                   points={flattenPoints(draftPoints)}
-                  stroke="#2563eb"
+                  stroke={isTransitDraft ? transitColor : "#2563eb"}
                   strokeWidth={1.5}
                   dash={[5, 6]}
                   opacity={0.65}
@@ -550,15 +638,15 @@ export function CanvasEditor({
               )}
               <Line
                 points={flattenPoints(draftRenderPoints)}
-                stroke="#2563eb"
-                strokeWidth={4}
+                stroke={isTransitDraft ? transitColor : "#2563eb"}
+                strokeWidth={isTransitDraft ? 7 : 4}
                 lineCap="round"
                 lineJoin="round"
                 dash={[8, 8]}
                 listening={false}
               />
               {draftPoints.map((point, index) => (
-                <Circle key={index} x={point.x} y={point.y} radius={5} fill="#2563eb" listening={false} />
+                <Circle key={index} x={point.x} y={point.y} radius={5} fill={isTransitDraft ? transitColor : "#2563eb"} listening={false} />
               ))}
             </>
           )}

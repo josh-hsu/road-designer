@@ -48,8 +48,10 @@ npm run tauri build
 ## Editor Workflow
 
 - Use `Draw Road` to create a road.
-- Click the canvas to add road nodes.
-- Press `Enter` to finish the current polyline road.
+- Click the canvas to add road nodes. Straight roads finish after 2 points, and curve roads finish after 4 points.
+- Use `Transit Line` or `Curved Transit` to create solid public transit routes with the selected route color.
+- Transit route nodes snap only to other transit route nodes.
+- Use `Station` to place a station icon anywhere on the canvas. Select the station to edit its multiline name.
 - Press `Esc` to cancel the current road.
 - Use `Select` to pick an existing road.
 - Drag selected node handles to reshape a road.
@@ -126,9 +128,24 @@ type Road = {
   showLabel?: boolean;
 };
 
+type TransitRoute = {
+  id: string;
+  points: Point[];
+  geometryMode?: "polyline" | "bezier";
+  color: string;
+};
+
+type TransitStation = {
+  id: string;
+  point: Point;
+  name: string;
+};
+
 type ProjectData = {
   version: 1;
   roads: Road[];
+  transitRoutes?: TransitRoute[];
+  transitStations?: TransitStation[];
 };
 ```
 
