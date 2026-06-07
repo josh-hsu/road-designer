@@ -16,6 +16,10 @@ function isValidRouteClass(value: unknown): boolean {
   );
 }
 
+function isValidRoadKind(value: unknown): boolean {
+  return value === undefined || value === "standard" || value === "connector";
+}
+
 function validateProjectData(value: unknown): ProjectData {
   if (!value || typeof value !== "object") {
     throw new Error("JSON root must be an object.");
@@ -36,6 +40,9 @@ function validateProjectData(value: unknown): ProjectData {
       typeof road.divider !== "boolean" ||
       typeof road.zLevel !== "number" ||
       (road.geometryMode !== undefined && road.geometryMode !== "polyline" && road.geometryMode !== "bezier") ||
+      !isValidRoadKind(road.kind) ||
+      (road.startZLevel !== undefined && typeof road.startZLevel !== "number") ||
+      (road.endZLevel !== undefined && typeof road.endZLevel !== "number") ||
       (road.name !== undefined && typeof road.name !== "string") ||
       !isValidRouteClass(road.routeClass) ||
       (road.routeNumber !== undefined && typeof road.routeNumber !== "string") ||
@@ -50,6 +57,9 @@ function validateProjectData(value: unknown): ProjectData {
     roads: project.roads.map((road) => ({
       ...road,
       geometryMode: road.geometryMode ?? "polyline",
+      kind: road.kind ?? "standard",
+      startZLevel: road.startZLevel ?? road.zLevel,
+      endZLevel: road.endZLevel ?? road.zLevel,
       name: road.name ?? "",
       routeClass: road.routeClass ?? "none",
       routeNumber: road.routeNumber ?? "",

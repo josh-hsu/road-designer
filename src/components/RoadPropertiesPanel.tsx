@@ -1,5 +1,5 @@
 import type { ChangeEvent } from "react";
-import type { Road, RoadType, RouteClass } from "../types/road";
+import type { Road, RoadKind, RoadType, RouteClass } from "../types/road";
 import { ROAD_TYPE_LABELS } from "../utils/roadStyle";
 
 type RoadPropertiesPanelProps = {
@@ -17,8 +17,16 @@ export function RoadPropertiesPanel({ road, onUpdateRoad }: RoadPropertiesPanelP
     );
   }
 
-  const updateNumber = (field: "width" | "lanes" | "zLevel") => (event: ChangeEvent<HTMLInputElement>) => {
+  const updateNumber = (field: "width" | "lanes" | "zLevel" | "startZLevel" | "endZLevel") => (event: ChangeEvent<HTMLInputElement>) => {
     onUpdateRoad(road.id, { [field]: Number(event.target.value) });
+  };
+
+  const updateRoadKind = (kind: RoadKind) => {
+    onUpdateRoad(road.id, {
+      kind,
+      startZLevel: road.startZLevel ?? road.zLevel,
+      endZLevel: road.endZLevel ?? road.zLevel,
+    });
   };
 
   return (
@@ -40,6 +48,14 @@ export function RoadPropertiesPanel({ road, onUpdateRoad }: RoadPropertiesPanelP
       <label className="field">
         <span>Geometry</span>
         <input readOnly value={road.geometryMode ?? "polyline"} />
+      </label>
+
+      <label className="field">
+        <span>Road kind</span>
+        <select value={road.kind ?? "standard"} onChange={(event) => updateRoadKind(event.target.value as RoadKind)}>
+          <option value="standard">Standard</option>
+          <option value="connector">Connector</option>
+        </select>
       </label>
 
       <label className="field">
@@ -100,6 +116,32 @@ export function RoadPropertiesPanel({ road, onUpdateRoad }: RoadPropertiesPanelP
         <span>Z level</span>
         <input min={-10} max={10} type="number" value={road.zLevel} onChange={updateNumber("zLevel")} />
       </label>
+
+      {(road.kind ?? "standard") === "connector" && (
+        <>
+          <label className="field">
+            <span>Start zLevel</span>
+            <input
+              min={-10}
+              max={10}
+              type="number"
+              value={road.startZLevel ?? road.zLevel}
+              onChange={updateNumber("startZLevel")}
+            />
+          </label>
+
+          <label className="field">
+            <span>End zLevel</span>
+            <input
+              min={-10}
+              max={10}
+              type="number"
+              value={road.endZLevel ?? road.zLevel}
+              onChange={updateNumber("endZLevel")}
+            />
+          </label>
+        </>
+      )}
 
       <div className="points-summary">{road.points.length} nodes</div>
     </aside>

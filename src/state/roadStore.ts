@@ -43,9 +43,14 @@ const initialState: RoadState = {
 };
 
 function normalizeRoad(road: Road): Road {
+  const kind = road.kind ?? "standard";
+
   return {
     ...road,
     geometryMode: road.geometryMode ?? "polyline",
+    kind,
+    startZLevel: road.startZLevel ?? road.zLevel,
+    endZLevel: road.endZLevel ?? road.zLevel,
     name: road.name ?? "",
     routeClass: road.routeClass ?? "none",
     routeNumber: road.routeNumber ?? "",
@@ -195,6 +200,9 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
           lanes: sourceRoad.lanes,
           divider: sourceRoad.divider,
           zLevel: sourceRoad.zLevel,
+          kind: sourceRoad.kind ?? "standard",
+          startZLevel: sourceRoad.startZLevel ?? sourceRoad.zLevel,
+          endZLevel: sourceRoad.endZLevel ?? sourceRoad.zLevel,
           name: sourceRoad.name ?? "",
           routeClass: sourceRoad.routeClass ?? "none",
           routeNumber: sourceRoad.routeNumber ?? "",

@@ -1,5 +1,5 @@
-import type { Point, Road } from "../types/road";
-import { getRoadRenderPoints } from "./roadGeometry";
+import type { Point } from "../types/road";
+import type { VisualRoadSegment } from "./visualRoadSegments";
 
 export type RoadIntersection = {
   id: string;
@@ -10,13 +10,14 @@ export type RoadIntersection = {
 };
 
 type RenderSegment = {
-  road: Road;
+  road: VisualRoadSegment;
   from: Point;
   to: Point;
 };
 
 const MERGE_DISTANCE = 8;
 const ENDPOINT_IGNORE_DISTANCE = 10;
+const ENDPOINT_SEGMENT_DISTANCE = 5;
 const EPSILON = 0.000001;
 
 function distance(a: Point, b: Point): number {
@@ -34,8 +35,22 @@ function subtract(a: Point, b: Point): Point {
   };
 }
 
-function getSegments(road: Road): RenderSegment[] {
-  const renderPoints = getRoadRenderPoints(road.points, road.geometryMode);
+function closestPointOnSegment(point: Point, from: Point, to: Point): Point {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const lengthSquared = dx * dx + dy * dy;
+
+  if (lengthSquared === 0) return from;
+
+  const t = Math.max(0, Math.min(1, ((point.x - from.x) * dx + (point.y - from.y) * dy) / lengthSquared));
+  return {
+    x: from.x + dx * t,
+    y: from.y + dy * t,
+  };
+}
+
+function getSegments(road: VisualRoadSegment): RenderSegment[] {
+  const renderPoints = road.points;
   const segments: RenderSegment[] = [];
 
   for (let index = 0; index < renderPoints.length - 1; index += 1) {
@@ -50,6 +65,8 @@ function getSegments(road: Road): RenderSegment[] {
 }
 
 function getSegmentIntersection(a: RenderSegment, b: RenderSegment): Point | null {
+  if (a.road.sourceRoadId === b.road.sourceRoadId) return null;
+
   const p = a.from;
   const q = b.from;
   const r = subtract(a.to, a.from);
@@ -79,7 +96,7 @@ function getSegmentIntersection(a: RenderSegment, b: RenderSegment): Point | nul
   return point;
 }
 
-function getIntersectionRadius(roads: Road[]): number {
+function getIntersectionRadius(roads: VisualRoadSegment[]): number {
   const widestRoad = roads.reduce((widest, road) => (road.width > widest.width ? road : widest));
   return widestRoad.width / 2 + 6;
 }
@@ -88,11 +105,11 @@ function createIntersectionId(point: Point, zLevel: number): string {
   return `intersection-${zLevel}-${Math.round(point.x)}-${Math.round(point.y)}`;
 }
 
-function mergeIntersection(intersections: RoadIntersection[], point: Point, zLevel: number, roads: Road[]) {
+function mergeIntersection(intersections: RoadIntersection[], point: Point, zLevel: number, roads: VisualRoadSegment[]) {
   const nearby = intersections.find(
     (intersection) => intersection.zLevel === zLevel && distance(intersection.point, point) <= MERGE_DISTANCE,
   );
-  const roadIds = roads.map((road) => road.id);
+  const roadIds = roads.map((road) => road.sourceRoadId);
 
   if (nearby) {
     nearby.point = {
@@ -114,10 +131,40 @@ function mergeIntersection(intersections: RoadIntersection[], point: Point, zLev
   });
 }
 
-export function getRoadIntersections(roads: Road[]): RoadIntersection[] {
-  const roadsByLevel = new Map<number, Road[]>();
+function getEndpointCandidates(road: VisualRoadSegment): Point[] {
+  const candidates: Point[] = [];
+  const firstPoint = road.points[0];
+  const lastPoint = road.points[road.points.length - 1];
 
-  roads.forEach((road) => {
+  if (firstPoint && !road.suppressStartCap) candidates.push(firstPoint);
+  if (lastPoint && !road.suppressEndCap) candidates.push(lastPoint);
+
+  return candidates;
+}
+
+function addEndpointSegmentIntersections(
+  intersections: RoadIntersection[],
+  endpointRoad: VisualRoadSegment,
+  segmentRoad: VisualRoadSegment,
+  segmentRoadSegments: RenderSegment[],
+  zLevel: number,
+) {
+  if (endpointRoad.sourceRoadId === segmentRoad.sourceRoadId) return;
+
+  getEndpointCandidates(endpointRoad).forEach((endpoint) => {
+    segmentRoadSegments.forEach((segment) => {
+      const closestPoint = closestPointOnSegment(endpoint, segment.from, segment.to);
+      if (distance(endpoint, closestPoint) <= ENDPOINT_SEGMENT_DISTANCE) {
+        mergeIntersection(intersections, closestPoint, zLevel, [endpointRoad, segmentRoad]);
+      }
+    });
+  });
+}
+
+export function getRoadIntersections(roads: VisualRoadSegment[]): RoadIntersection[] {
+  const roadsByLevel = new Map<number, VisualRoadSegment[]>();
+
+  roads.filter((road) => road.participatesInIntersection).forEach((road) => {
     roadsByLevel.set(road.zLevel, [...(roadsByLevel.get(road.zLevel) ?? []), road]);
   });
 
@@ -128,6 +175,7 @@ export function getRoadIntersections(roads: Road[]): RoadIntersection[] {
       for (let otherRoadIndex = roadIndex + 1; otherRoadIndex < levelRoads.length; otherRoadIndex += 1) {
         const road = levelRoads[roadIndex];
         const otherRoad = levelRoads[otherRoadIndex];
+        if (road.sourceRoadId === otherRoad.sourceRoadId) continue;
         const segments = getSegments(road);
         const otherSegments = getSegments(otherRoad);
 
@@ -139,6 +187,9 @@ export function getRoadIntersections(roads: Road[]): RoadIntersection[] {
             }
           });
         });
+
+        addEndpointSegmentIntersections(intersections, road, otherRoad, otherSegments, zLevel);
+        addEndpointSegmentIntersections(intersections, otherRoad, road, segments, zLevel);
       }
     }
   });

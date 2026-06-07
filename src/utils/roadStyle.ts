@@ -54,6 +54,9 @@ export const DEFAULT_ROAD_BY_TYPE: Record<RoadType, RoadDefaults> = {
     lanes: 2,
     divider: false,
     zLevel: 0,
+    kind: "standard",
+    startZLevel: 0,
+    endZLevel: 0,
     name: "",
     routeClass: "none",
     routeNumber: "",
@@ -65,6 +68,9 @@ export const DEFAULT_ROAD_BY_TYPE: Record<RoadType, RoadDefaults> = {
     lanes: 4,
     divider: true,
     zLevel: 0,
+    kind: "standard",
+    startZLevel: 0,
+    endZLevel: 0,
     name: "",
     routeClass: "none",
     routeNumber: "",
@@ -72,7 +78,7 @@ export const DEFAULT_ROAD_BY_TYPE: Record<RoadType, RoadDefaults> = {
   },
 };
 
-export function getRoadStyle(road: Road): RoadVisualStyle {
+export function getRoadStyle(road: Pick<Road, "roadType">): RoadVisualStyle {
   return ROAD_STYLES[road.roadType];
 }
 
@@ -80,7 +86,9 @@ export function getDefaultsForRoadType(roadType: RoadType): RoadDefaults {
   return DEFAULT_ROAD_BY_TYPE[roadType];
 }
 
-export function compareRoadVisualPriority(a: Road, b: Road): number {
+type RoadPriorityInput = Pick<Road, "id" | "roadType" | "width">;
+
+export function compareRoadVisualPriority(a: RoadPriorityInput, b: RoadPriorityInput): number {
   const typePriority = ROAD_TYPE_PRIORITY[a.roadType] - ROAD_TYPE_PRIORITY[b.roadType];
   if (typePriority !== 0) return typePriority;
 

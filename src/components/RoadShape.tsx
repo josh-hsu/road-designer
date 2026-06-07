@@ -5,9 +5,12 @@ import { flattenPoints, getRoadRenderPoints } from "../utils/roadGeometry";
 import { getDividerLayers, getLaneMarkingLayers, getRoadLayerStyles } from "../utils/roadRender";
 import type { RoadMarkingMask } from "../utils/roadRender";
 import type { SnapTarget } from "../utils/snap";
+import type { VisualRoadSegment } from "../utils/visualRoadSegments";
+
+type RenderableRoad = Road | VisualRoadSegment;
 
 type RoadShapeProps = {
-  road: Road;
+  road: RenderableRoad;
   isSelected: boolean;
   canSelect: boolean;
   renderPhase?: "selected" | "outer" | "body" | "markings" | "controls";
@@ -44,8 +47,9 @@ export function RoadShape({
   const roadLayers = getRoadLayerStyles(road, points, isSelected);
   const laneLayers = getLaneMarkingLayers(road, renderPoints, markingMasks);
   const dividerLayers = getDividerLayers(road, renderPoints, markingMasks);
+  const selectableRoadId = "sourceRoadId" in road ? road.sourceRoadId : road.id;
   const selectRoad = () => {
-    if (canSelect) onSelect(road.id);
+    if (canSelect) onSelect(selectableRoadId);
   };
   const phaseLayers =
     renderPhase === "selected"
@@ -124,6 +128,7 @@ export function RoadShape({
         )}
       {renderPhase === "controls" &&
         isSelected &&
+        !("sourceRoadId" in road) &&
         road.points.map((point, index) => (
           <Circle
             key={`${road.id}-${index}`}

@@ -7,6 +7,8 @@ export type RoadType = "local" | "arterial";
 
 export type RoadGeometryMode = "polyline" | "bezier";
 
+export type RoadKind = "standard" | "connector";
+
 export type RouteClass = "none" | "national_freeway" | "expressway" | "provincial_highway";
 
 export type Road = {
@@ -18,6 +20,9 @@ export type Road = {
   divider: boolean;
   zLevel: number;
   geometryMode?: RoadGeometryMode;
+  kind?: RoadKind;
+  startZLevel?: number;
+  endZLevel?: number;
   name?: string;
   routeClass?: RouteClass;
   routeNumber?: string;
@@ -33,5 +38,16 @@ export type ToolMode = "select" | "draw" | "drawCurve";
 
 export type RoadDefaults = Pick<
   Road,
-  "roadType" | "width" | "lanes" | "divider" | "zLevel" | "name" | "routeClass" | "routeNumber" | "showLabel"
+  | "roadType"
+  | "width"
+  | "lanes"
+  | "divider"
+  | "zLevel"
+  | "kind"
+  | "startZLevel"
+  | "endZLevel"
+  | "name"
+  | "routeClass"
+  | "routeNumber"
+  | "showLabel"
 >;

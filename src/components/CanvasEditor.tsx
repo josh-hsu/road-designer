@@ -10,9 +10,11 @@ import { useViewportStore } from "../state/viewportStore";
 import { getRoadIntersections } from "../utils/intersections";
 import { flattenPoints, getRoadRenderPoints } from "../utils/roadGeometry";
 import { getEndpointJunctions } from "../utils/roadRender";
-import { compareRoadVisualPriority } from "../utils/roadStyle";
+import { compareRoadVisualPriority, getRoadStyle } from "../utils/roadStyle";
 import { snapPointToRoadNode } from "../utils/snap";
 import type { SnapTarget } from "../utils/snap";
+import { getVisualRoadSegments, splitPolylineAtRatio } from "../utils/visualRoadSegments";
+import type { VisualRoadSegment } from "../utils/visualRoadSegments";
 import { screenToWorld } from "../utils/viewport";
 
 type CanvasEditorProps = {
@@ -37,17 +39,22 @@ function getScreenPoint(stage: Konva.Stage): Point {
   };
 }
 
-function groupRoadsByLevel(roads: Road[]): Array<{ zLevel: number; roads: Road[] }> {
-  const grouped = new Map<number, Road[]>();
+function groupSegmentsByLevel(segments: VisualRoadSegment[]): Array<{ zLevel: number; segments: VisualRoadSegment[] }> {
+  const grouped = new Map<number, VisualRoadSegment[]>();
+  const zLevels = Array.from(new Set(segments.map((segment) => segment.zLevel))).sort((a, b) => a - b);
 
-  roads.forEach((road) => {
-    grouped.set(road.zLevel, [...(grouped.get(road.zLevel) ?? []), road]);
+  zLevels.forEach((zLevel) => {
+    grouped.set(zLevel, []);
+  });
+
+  segments.forEach((segment) => {
+    grouped.set(segment.zLevel, [...(grouped.get(segment.zLevel) ?? []), segment]);
   });
 
   return Array.from(grouped.entries())
-    .map(([zLevel, levelRoads]) => ({
+    .map(([zLevel, levelSegments]) => ({
       zLevel,
-      roads: levelRoads.sort(compareRoadVisualPriority),
+      segments: levelSegments.sort(compareRoadVisualPriority),
     }))
     .sort((a, b) => a.zLevel - b.zLevel);
 }
@@ -74,13 +81,54 @@ function distanceToSegment(point: Point, from: Point, to: Point): number {
   });
 }
 
-function distanceToRoad(point: Point, road: Road): number {
+function distanceToRoad(point: Point, road: { points: Point[]; geometryMode?: string }): number {
   const renderPoints = getRoadRenderPoints(road.points, road.geometryMode);
   if (renderPoints.length === 0) return Number.POSITIVE_INFINITY;
 
   return renderPoints.slice(0, -1).reduce((minimumDistance, from, index) => {
     return Math.min(minimumDistance, distanceToSegment(point, from, renderPoints[index + 1]));
   }, Number.POSITIVE_INFINITY);
+}
+
+function getConnectorBaseZLevel(road: Road): number {
+  return Math.min(road.startZLevel ?? road.zLevel, road.endZLevel ?? road.zLevel);
+}
+
+function getAngleBetweenPoints(from: Point, to: Point): number {
+  return (Math.atan2(to.y - from.y, to.x - from.x) * 180) / Math.PI;
+}
+
+function getConnectorSplitPatch(
+  road: Road,
+): { point: Point; width: number; length: number; rotation: number; fill: string; zLevels: number[] } | null {
+  if ((road.kind ?? "standard") !== "connector") return null;
+
+  const renderPoints = getRoadRenderPoints(road.points, road.geometryMode);
+  if (renderPoints.length < 2) return null;
+
+  const { startPoints, endPoints } = splitPolylineAtRatio(renderPoints, 0.5);
+  const point = startPoints[startPoints.length - 1];
+  if (!point) return null;
+
+  const beforePoint = startPoints[startPoints.length - 2];
+  const afterPoint = endPoints[1];
+  const rotation = beforePoint && afterPoint
+    ? getAngleBetweenPoints(beforePoint, afterPoint)
+    : beforePoint
+      ? getAngleBetweenPoints(beforePoint, point)
+      : afterPoint
+        ? getAngleBetweenPoints(point, afterPoint)
+        : 0;
+  const inset = Math.min(4, road.width * 0.02);
+
+  return {
+    point,
+    width: Math.max(4, road.width - inset),
+    length: Math.max(8, road.width * 1.55),
+    rotation,
+    fill: getRoadStyle(road).body,
+    zLevels: Array.from(new Set([road.startZLevel ?? road.zLevel, road.endZLevel ?? road.zLevel])),
+  };
 }
 
 export function CanvasEditor({
@@ -151,9 +199,10 @@ export function CanvasEditor({
   }, []);
 
   const sortedRoads = useMemo(
-    () => [...roads].sort((a, b) => a.zLevel - b.zLevel),
+    () => [...roads].sort((a, b) => getConnectorBaseZLevel(a) - getConnectorBaseZLevel(b)),
     [roads],
   );
+  const visualSegments = useMemo(() => getVisualRoadSegments(sortedRoads), [sortedRoads]);
   const controlRoads = useMemo(
     () => [
       ...sortedRoads.filter((road) => road.id !== selectedRoadId),
@@ -161,8 +210,12 @@ export function CanvasEditor({
     ],
     [selectedRoadId, sortedRoads],
   );
-  const roadLevels = useMemo(() => groupRoadsByLevel(sortedRoads), [sortedRoads]);
-  const intersections = useMemo(() => getRoadIntersections(sortedRoads), [sortedRoads]);
+  const segmentLevels = useMemo(() => groupSegmentsByLevel(visualSegments), [visualSegments]);
+  const intersections = useMemo(() => getRoadIntersections(visualSegments), [visualSegments]);
+  const connectorSplitPatches = useMemo(
+    () => sortedRoads.map(getConnectorSplitPatch).filter((patch): patch is NonNullable<typeof patch> => Boolean(patch)),
+    [sortedRoads],
+  );
 
   const getSnappedPoint = (
     point: Point,
@@ -282,20 +335,21 @@ export function CanvasEditor({
           />
         </Layer>
         <Layer x={viewport.x} y={viewport.y} scaleX={viewport.scale} scaleY={viewport.scale}>
-          {roadLevels.map((level) => {
+          {segmentLevels.map((level) => {
             const levelIntersections = intersections.filter((intersection) => intersection.zLevel === level.zLevel);
-            const endpointJunctions = getEndpointJunctions(level.roads).filter((junction) => {
+            const levelSplitPatches = connectorSplitPatches.filter((patch) => patch.zLevels.includes(level.zLevel));
+            const endpointJunctions = getEndpointJunctions(level.segments).filter((junction) => {
               const overlapsIntersection = levelIntersections.some((intersection) => {
                 return distanceBetween(junction, intersection.point) <= 8;
               });
               if (overlapsIntersection) return false;
 
-              const connectedRoads = level.roads.filter((road) => junction.roadIds.includes(road.id));
+              const connectedRoads = level.segments.filter((road) => junction.roadIds.includes(road.sourceRoadId));
               const primaryConnectedRoad =
                 [...connectedRoads].sort(compareRoadVisualPriority)[connectedRoads.length - 1] ?? connectedRoads[0];
 
-              return !level.roads.some((road) => {
-                if (!primaryConnectedRoad || junction.roadIds.includes(road.id)) return false;
+              return !level.segments.some((road) => {
+                if (!primaryConnectedRoad || junction.roadIds.includes(road.sourceRoadId)) return false;
                 if (compareRoadVisualPriority(road, primaryConnectedRoad) <= 0) return false;
 
                 return distanceToRoad(junction, road) <= road.width / 2 + 4;
@@ -304,12 +358,12 @@ export function CanvasEditor({
 
             return (
               <Group key={`z-level-${level.zLevel}`}>
-                {level.roads.map((road) => (
+                {level.segments.map((road) => (
                   <RoadShape
                     key={`selected-${road.id}`}
                     road={road}
                     renderPhase="selected"
-                    isSelected={road.id === selectedRoadId}
+                    isSelected={road.sourceRoadId === selectedRoadId}
                     canSelect={mode === "select" && !spacePressed && !isPanning}
                     getSnappedPoint={getSnappedPoint}
                     onSelect={onSelectRoad}
@@ -319,12 +373,12 @@ export function CanvasEditor({
                     onSnapPreviewChange={setSnapPreview}
                   />
                 ))}
-                {level.roads.map((road) => (
+                {level.segments.map((road) => (
                   <RoadShape
                     key={`outer-${road.id}`}
                     road={road}
                     renderPhase="outer"
-                    isSelected={road.id === selectedRoadId}
+                    isSelected={road.sourceRoadId === selectedRoadId}
                     canSelect={mode === "select" && !spacePressed && !isPanning}
                     getSnappedPoint={getSnappedPoint}
                     onSelect={onSelectRoad}
@@ -334,12 +388,12 @@ export function CanvasEditor({
                     onSnapPreviewChange={setSnapPreview}
                   />
                 ))}
-                {level.roads.map((road) => (
+                {level.segments.map((road) => (
                   <RoadShape
                     key={`body-${road.id}`}
                     road={road}
                     renderPhase="body"
-                    isSelected={road.id === selectedRoadId}
+                    isSelected={road.sourceRoadId === selectedRoadId}
                     canSelect={mode === "select" && !spacePressed && !isPanning}
                     getSnappedPoint={getSnappedPoint}
                     onSelect={onSelectRoad}
@@ -369,18 +423,32 @@ export function CanvasEditor({
                     listening={false}
                   />
                 ))}
-                {level.roads.map((road) => (
+                {levelSplitPatches.map((patch) => (
+                  <Rect
+                    key={`connector-split-${level.zLevel}-${patch.point.x}-${patch.point.y}`}
+                    x={patch.point.x}
+                    y={patch.point.y}
+                    width={patch.length}
+                    height={patch.width}
+                    offsetX={patch.length / 2}
+                    offsetY={patch.width / 2}
+                    rotation={patch.rotation}
+                    fill={patch.fill}
+                    listening={false}
+                  />
+                ))}
+                {level.segments.map((road) => (
                   <RoadShape
                     key={`markings-${road.id}`}
                     road={road}
                     renderPhase="markings"
                     markingMasks={levelIntersections
-                      .filter((intersection) => intersection.roadIds.includes(road.id))
+                      .filter((intersection) => intersection.roadIds.includes(road.sourceRoadId))
                       .map((intersection) => ({
                         point: intersection.point,
                         radius: intersection.radius + 4,
                       }))}
-                    isSelected={road.id === selectedRoadId}
+                    isSelected={road.sourceRoadId === selectedRoadId}
                     canSelect={mode === "select" && !spacePressed && !isPanning}
                     getSnappedPoint={getSnappedPoint}
                     onSelect={onSelectRoad}

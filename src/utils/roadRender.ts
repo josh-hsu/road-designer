@@ -1,6 +1,7 @@
 import type { Point, Road } from "../types/road";
 import { offsetPolyline } from "./roadGeometry";
 import { compareRoadVisualPriority, getRoadStyle } from "./roadStyle";
+import type { VisualRoadSegment } from "./visualRoadSegments";
 
 export type RoadLayerStyle = {
   points: number[];
@@ -15,6 +16,12 @@ export type RoadMarkingMask = {
   radius: number;
 };
 
+type RenderableRoad = Pick<Road, "id" | "roadType" | "width" | "lanes" | "divider"> & {
+  sourceRoadId?: string;
+  sourceKind?: "standard" | "connector";
+  points: Point[];
+};
+
 export type JunctionRenderStyle = {
   x: number;
   y: number;
@@ -25,7 +32,7 @@ export type JunctionRenderStyle = {
   body: string;
 };
 
-export function getRoadLayerStyles(road: Road, flattenedPoints: number[], isSelected: boolean): RoadLayerStyle[] {
+export function getRoadLayerStyles(road: RenderableRoad, flattenedPoints: number[], isSelected: boolean): RoadLayerStyle[] {
   const style = getRoadStyle(road);
   const layers: RoadLayerStyle[] = [];
 
@@ -109,7 +116,7 @@ function splitPolylineByMasks(points: Point[], masks: RoadMarkingMask[]): Point[
 }
 
 export function getLaneMarkingLayers(
-  road: Road,
+  road: RenderableRoad,
   renderPoints: Point[],
   masks: RoadMarkingMask[] = [],
 ): RoadLayerStyle[] {
@@ -140,7 +147,7 @@ export function getLaneMarkingLayers(
 }
 
 export function getDividerLayers(
-  road: Road,
+  road: RenderableRoad,
   renderPoints: Point[],
   masks: RoadMarkingMask[] = [],
 ): RoadLayerStyle[] {
@@ -155,8 +162,8 @@ export function getDividerLayers(
   }));
 }
 
-export function getEndpointJunctions(roads: Road[]): JunctionRenderStyle[] {
-  const endpointGroups = new Map<string, Road[]>();
+export function getEndpointJunctions(roads: VisualRoadSegment[]): JunctionRenderStyle[] {
+  const endpointGroups = new Map<string, VisualRoadSegment[]>();
 
   roads.forEach((road) => {
     const endpoints = [road.points[0], road.points[road.points.length - 1]].filter(Boolean);
@@ -168,6 +175,7 @@ export function getEndpointJunctions(roads: Road[]): JunctionRenderStyle[] {
 
   return Array.from(endpointGroups.entries())
     .filter(([, connectedRoads]) => connectedRoads.length > 1)
+    .filter(([, connectedRoads]) => new Set(connectedRoads.map((road) => road.sourceRoadId)).size > 1)
     .map(([key, connectedRoads]) => {
       const [x, y] = key.split(",").map(Number);
       const widestRoad = connectedRoads.reduce((widest, road) => (road.width > widest.width ? road : widest));
@@ -179,7 +187,7 @@ export function getEndpointJunctions(roads: Road[]): JunctionRenderStyle[] {
       return {
         x,
         y,
-        roadIds: connectedRoads.map((road) => road.id),
+        roadIds: connectedRoads.map((road) => road.sourceRoadId),
         outerRadius,
         bodyRadius: outerRadius + 0.25,
         outer: primaryStyle.outer,
