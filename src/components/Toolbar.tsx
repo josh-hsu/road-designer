@@ -9,28 +9,28 @@ type RoadPreset = Pick<RoadDefaults, "width" | "lanes" | "divider"> & {
 const ROAD_PRESETS: RoadPreset[] = [
   {
     id: "small",
-    label: "Small road",
+    label: "1 lane",
     width: 9,
     lanes: 1,
     divider: false,
   },
   {
     id: "normal",
-    label: "Normal road",
+    label: "2 lanes",
     width: 18,
     lanes: 2,
     divider: false,
   },
   {
     id: "big",
-    label: "Big road",
+    label: "4 lanes",
     width: 27,
     lanes: 4,
     divider: true,
   },
   {
     id: "huge",
-    label: "Huge road",
+    label: "6 lanes",
     width: 36,
     lanes: 6,
     divider: true,
@@ -155,14 +155,12 @@ export function Toolbar({
             <button
               key={`straight-${preset.id}`}
               className={`preset-button ${mode === "draw" && presetMatches(drawDefaults, preset) ? "active" : ""}`}
-              title={`${preset.label}: ${preset.width}px, ${preset.lanes} lane${preset.lanes > 1 ? "s" : ""}${
-                preset.divider ? ", divider" : ""
-              }`}
-              aria-label={`Draw ${preset.label}`}
+              title={`${preset.label}: ${preset.width}px${preset.divider ? ", divider" : ""}`}
+              aria-label={`Draw ${preset.label} road`}
               onClick={() => onDrawPresetSelect("draw", getPresetDefaults(preset))}
             >
               <RoadPresetIcon preset={preset} curved={false} roadType={drawDefaults.roadType} />
-              <span>{preset.id}</span>
+              <span>{preset.label}</span>
             </button>
           ))}
         </div>
@@ -175,14 +173,12 @@ export function Toolbar({
             <button
               key={`curve-${preset.id}`}
               className={`preset-button ${mode === "drawCurve" && presetMatches(drawDefaults, preset) ? "active" : ""}`}
-              title={`Curved ${preset.label}: ${preset.width}px, ${preset.lanes} lane${
-                preset.lanes > 1 ? "s" : ""
-              }${preset.divider ? ", divider" : ""}`}
-              aria-label={`Draw curved ${preset.label}`}
+              title={`Curved ${preset.label}: ${preset.width}px${preset.divider ? ", divider" : ""}`}
+              aria-label={`Draw curved ${preset.label} road`}
               onClick={() => onDrawPresetSelect("drawCurve", getPresetDefaults(preset))}
             >
               <RoadPresetIcon preset={preset} curved roadType={drawDefaults.roadType} />
-              <span>{preset.id}</span>
+              <span>{preset.label}</span>
             </button>
           ))}
         </div>
