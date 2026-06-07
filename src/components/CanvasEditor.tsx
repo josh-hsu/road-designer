@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Circle, Group, Layer, Line, Rect, Stage, Text } from "react-konva";
 import type Konva from "konva";
-import type { Point, Road, ToolMode } from "../types/road";
+import type { Point, Road, RoadGeometryMode, ToolMode } from "../types/road";
 import { GridLayer } from "./GridLayer";
 import { RoadLabelLayer } from "./RoadLabelLayer";
 import { RoadShape } from "./RoadShape";
@@ -25,6 +25,7 @@ type CanvasEditorProps = {
   showGrid: boolean;
   showDebugMasks: boolean;
   onCanvasPoint: (point: Point) => void;
+  onFinishDraft: (geometryMode: RoadGeometryMode) => void;
   onAdoptRoadDefaults: (roadId: string) => void;
   onSelectRoad: (roadId: string | null) => void;
   onRoadPointDragStart: () => void;
@@ -158,6 +159,7 @@ export function CanvasEditor({
   showGrid,
   showDebugMasks,
   onCanvasPoint,
+  onFinishDraft,
   onAdoptRoadDefaults,
   onSelectRoad,
   onRoadPointDragStart,
@@ -276,6 +278,9 @@ export function CanvasEditor({
       }
       setSnapPreview(snapped.target);
       onCanvasPoint(snapped.point);
+      if (draftPoints.length + 1 >= (mode === "drawCurve" ? 4 : 2)) {
+        onFinishDraft(mode === "drawCurve" ? "bezier" : "polyline");
+      }
       return;
     }
 

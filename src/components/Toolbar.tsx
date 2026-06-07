@@ -41,6 +41,7 @@ type ToolbarProps = {
   mode: ToolMode;
   drawDefaults: RoadDefaults;
   showGrid: boolean;
+  keepDrawing: boolean;
   showDebugMasks: boolean;
   onModeChange: (mode: ToolMode) => void;
   onDrawRoadTypeChange: (roadType: RoadType) => void;
@@ -49,6 +50,7 @@ type ToolbarProps = {
     preset: Pick<RoadDefaults, "width" | "lanes" | "divider">,
   ) => void;
   onShowGridChange: (showGrid: boolean) => void;
+  onKeepDrawingChange: (keepDrawing: boolean) => void;
   onShowDebugMasksChange: (showDebugMasks: boolean) => void;
   onExport: () => void;
   onImportClick: () => void;
@@ -121,11 +123,13 @@ export function Toolbar({
   mode,
   drawDefaults,
   showGrid,
+  keepDrawing,
   showDebugMasks,
   onModeChange,
   onDrawRoadTypeChange,
   onDrawPresetSelect,
   onShowGridChange,
+  onKeepDrawingChange,
   onShowDebugMasksChange,
   onExport,
   onImportClick,
@@ -191,6 +195,15 @@ export function Toolbar({
       <label className="checkbox-field">
         <input type="checkbox" checked={showGrid} onChange={(event) => onShowGridChange(event.target.checked)} />
         <span>Show Grid</span>
+      </label>
+
+      <label className="checkbox-field">
+        <input
+          type="checkbox"
+          checked={keepDrawing}
+          onChange={(event) => onKeepDrawingChange(event.target.checked)}
+        />
+        <span>Keep Drawing</span>
       </label>
 
       <label className="checkbox-field">

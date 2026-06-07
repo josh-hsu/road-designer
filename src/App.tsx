@@ -3,16 +3,31 @@ import { CanvasEditor } from "./components/CanvasEditor";
 import { RoadPropertiesPanel } from "./components/RoadPropertiesPanel";
 import { Toolbar } from "./components/Toolbar";
 import { useRoadStore } from "./state/roadStore";
-import type { ToolMode } from "./types/road";
+import type { RoadGeometryMode, ToolMode } from "./types/road";
 import { exportProjectData, importProjectDataFromFile, importProjectDataWithDialog } from "./utils/fileIO";
 
 export default function App() {
   const [mode, setMode] = useState<ToolMode>("select");
   const [showGrid, setShowGrid] = useState(true);
+  const [keepDrawing, setKeepDrawing] = useState(true);
   const [showDebugMasks, setShowDebugMasks] = useState(false);
   const browserImportRef = useRef<HTMLInputElement | null>(null);
   const roadStore = useRoadStore();
   const { clearDraft, deleteRoad, finishDraft, redo, selectedRoadId, undo } = roadStore;
+
+  const handleModeChange = (nextMode: ToolMode) => {
+    if (nextMode === "select") {
+      clearDraft();
+    }
+    setMode(nextMode);
+  };
+
+  const handleFinishDraft = (geometryMode: RoadGeometryMode) => {
+    finishDraft(geometryMode);
+    if (!keepDrawing) {
+      setMode("select");
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -38,8 +53,7 @@ export default function App() {
       }
 
       if (event.key === "Enter" && (mode === "draw" || mode === "drawCurve")) {
-        finishDraft(mode === "drawCurve" ? "bezier" : "polyline");
-        setMode("select");
+        handleFinishDraft(mode === "drawCurve" ? "bezier" : "polyline");
         event.preventDefault();
       }
 
@@ -57,7 +71,7 @@ export default function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [clearDraft, deleteRoad, finishDraft, mode, redo, selectedRoadId, undo]);
+  }, [clearDraft, deleteRoad, handleFinishDraft, mode, redo, selectedRoadId, undo]);
 
   const handleImportClick = async () => {
     try {
@@ -94,8 +108,9 @@ export default function App() {
         mode={mode}
         drawDefaults={roadStore.drawDefaults}
         showGrid={showGrid}
+        keepDrawing={keepDrawing}
         showDebugMasks={showDebugMasks}
-        onModeChange={setMode}
+        onModeChange={handleModeChange}
         onDrawRoadTypeChange={roadStore.setDrawType}
         onDrawPresetSelect={(toolMode, preset) => {
           roadStore.setDrawPreset({
@@ -105,6 +120,7 @@ export default function App() {
           setMode(toolMode);
         }}
         onShowGridChange={setShowGrid}
+        onKeepDrawingChange={setKeepDrawing}
         onShowDebugMasksChange={setShowDebugMasks}
         onExport={handleExport}
         onImportClick={handleImportClick}
@@ -130,6 +146,7 @@ export default function App() {
         showGrid={showGrid}
         showDebugMasks={showDebugMasks}
         onCanvasPoint={roadStore.addDraftPoint}
+        onFinishDraft={handleFinishDraft}
         onAdoptRoadDefaults={roadStore.adoptRoadDefaults}
         onSelectRoad={roadStore.selectRoad}
         onRoadPointDragStart={roadStore.beginRoadPointDrag}
