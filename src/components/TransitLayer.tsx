@@ -7,6 +7,8 @@ type TransitLayerProps = {
   stations: TransitStation[];
   selectedRouteId: string | null;
   selectedStationId: string | null;
+  renderRoutes?: boolean;
+  renderStations?: boolean;
   canSelect: boolean;
   onSelectRoute: (routeId: string | null) => void;
   onSelectStation: (stationId: string | null) => void;
@@ -22,6 +24,8 @@ export function TransitLayer({
   stations,
   selectedRouteId,
   selectedStationId,
+  renderRoutes = true,
+  renderStations = true,
   canSelect,
   onSelectRoute,
   onSelectStation,
@@ -33,7 +37,7 @@ export function TransitLayer({
 }: TransitLayerProps) {
   return (
     <Group>
-      {routes.map((route) => {
+      {renderRoutes && routes.map((route) => {
         const points = flattenPoints(getRoadRenderPoints(route.points, route.geometryMode));
         const selected = route.id === selectedRouteId;
 
@@ -104,7 +108,7 @@ export function TransitLayer({
         );
       })}
 
-      {stations.map((station) => {
+      {renderStations && stations.map((station) => {
         const selected = station.id === selectedStationId;
 
         return (

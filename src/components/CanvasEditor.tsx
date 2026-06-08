@@ -607,12 +607,28 @@ export function CanvasEditor({
               onSnapPreviewChange={setSnapPreview}
             />
           ))}
-          <RoadLabelLayer roads={sortedRoads} zoom={viewport.scale} />
           <TransitLayer
             routes={transitRoutes}
-            stations={transitStations}
+            stations={[]}
             selectedRouteId={selectedTransitRouteId}
+            selectedStationId={null}
+            renderStations={false}
+            canSelect={mode === "select" && !spacePressed && !isPanning}
+            onSelectRoute={onSelectTransitRoute}
+            onSelectStation={onSelectTransitStation}
+            onDragStart={onRoadPointDragStart}
+            onRoutePointDragMove={onTransitRoutePointDragMove}
+            onRoutePointDragEnd={onTransitRoutePointDragEnd}
+            onStationDragMove={onTransitStationDragMove}
+            onStationDragEnd={onTransitStationDragEnd}
+          />
+          <RoadLabelLayer roads={sortedRoads} zoom={viewport.scale} />
+          <TransitLayer
+            routes={[]}
+            stations={transitStations}
+            selectedRouteId={null}
             selectedStationId={selectedTransitStationId}
+            renderRoutes={false}
             canSelect={mode === "select" && !spacePressed && !isPanning}
             onSelectRoute={onSelectTransitRoute}
             onSelectStation={onSelectTransitStation}
