@@ -35,6 +35,8 @@ export function TransitLayer({
   onStationDragMove,
   onStationDragEnd,
 }: TransitLayerProps) {
+  const selectedRoute = routes.find((route) => route.id === selectedRouteId) ?? null;
+
   return (
     <Group>
       {renderRoutes && routes.map((route) => {
@@ -76,37 +78,38 @@ export function TransitLayer({
                 if (canSelect) onSelectRoute(route.id);
               }}
             />
-            {selected &&
-              route.points.map((point, index) => (
-                <Circle
-                  key={`${route.id}-point-${index}`}
-                  x={point.x}
-                  y={point.y}
-                  radius={6}
-                  fill="#ffffff"
-                  stroke={route.color}
-                  strokeWidth={3}
-                  draggable={canSelect}
-                  onDragStart={onDragStart}
-                  onDragMove={(event) => {
-                    const nextPoint = {
-                      x: Math.round(event.target.x()),
-                      y: Math.round(event.target.y()),
-                    };
-                    onRoutePointDragMove(route.id, index, nextPoint);
-                  }}
-                  onDragEnd={(event) => {
-                    const nextPoint = {
-                      x: Math.round(event.target.x()),
-                      y: Math.round(event.target.y()),
-                    };
-                    onRoutePointDragEnd(route.id, index, nextPoint);
-                  }}
-                />
-              ))}
           </Group>
         );
       })}
+
+      {renderRoutes &&
+        selectedRoute?.points.map((point, index) => (
+          <Circle
+            key={`${selectedRoute.id}-point-${index}`}
+            x={point.x}
+            y={point.y}
+            radius={6}
+            fill="#ffffff"
+            stroke={selectedRoute.color}
+            strokeWidth={3}
+            draggable={canSelect}
+            onDragStart={onDragStart}
+            onDragMove={(event) => {
+              const nextPoint = {
+                x: Math.round(event.target.x()),
+                y: Math.round(event.target.y()),
+              };
+              onRoutePointDragMove(selectedRoute.id, index, nextPoint);
+            }}
+            onDragEnd={(event) => {
+              const nextPoint = {
+                x: Math.round(event.target.x()),
+                y: Math.round(event.target.y()),
+              };
+              onRoutePointDragEnd(selectedRoute.id, index, nextPoint);
+            }}
+          />
+        ))}
 
       {renderStations && stations.map((station) => {
         const selected = station.id === selectedStationId;
