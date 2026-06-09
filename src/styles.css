@@ -54,6 +54,10 @@ button.active {
   height: 100vh;
 }
 
+.app-layout.properties-collapsed {
+  grid-template-columns: 176px minmax(0, 1fr) 36px;
+}
+
 .toolbar,
 .properties-panel {
   display: flex;
@@ -72,9 +76,33 @@ button.active {
 }
 
 .properties-panel {
+  position: relative;
   border-left: 1px solid #d7dde5;
   overflow-y: auto;
   scrollbar-gutter: stable;
+}
+
+.properties-panel.collapsed {
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+  padding: 8px 4px;
+}
+
+.properties-tab {
+  width: 24px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: 6px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.properties-panel:not(.collapsed) .properties-tab {
+  align-self: flex-start;
+  width: 28px;
+  min-height: 28px;
+  margin: -4px 0 0 -4px;
 }
 
 .toolbar-title {

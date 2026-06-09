@@ -11,6 +11,7 @@ export default function App() {
   const [showGrid, setShowGrid] = useState(true);
   const [keepDrawing, setKeepDrawing] = useState(true);
   const [showDebugMasks, setShowDebugMasks] = useState(false);
+  const [propertiesCollapsed, setPropertiesCollapsed] = useState(true);
   const browserImportRef = useRef<HTMLInputElement | null>(null);
   const roadStore = useRoadStore();
   const {
@@ -46,6 +47,10 @@ export default function App() {
       setMode("select");
     }
   };
+
+  useEffect(() => {
+    setPropertiesCollapsed(!roadStore.selectedRoad && !roadStore.selectedTransitStation);
+  }, [roadStore.selectedRoad, roadStore.selectedTransitStation]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -161,7 +166,7 @@ export default function App() {
   };
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${propertiesCollapsed ? "properties-collapsed" : ""}`}>
       <Toolbar
         mode={mode}
         drawDefaults={roadStore.drawDefaults}
@@ -231,6 +236,8 @@ export default function App() {
       <RoadPropertiesPanel
         road={roadStore.selectedRoad}
         transitStation={roadStore.selectedTransitStation}
+        collapsed={propertiesCollapsed}
+        onCollapsedChange={setPropertiesCollapsed}
         onUpdateRoad={roadStore.updateRoad}
         onUpdateTransitStation={roadStore.updateTransitStation}
       />

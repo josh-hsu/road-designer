@@ -5,6 +5,8 @@ import { ROAD_TYPE_LABELS } from "../utils/roadStyle";
 type RoadPropertiesPanelProps = {
   road: Road | null;
   transitStation: TransitStation | null;
+  collapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
   onUpdateRoad: (roadId: string, patch: Partial<Omit<Road, "id">>) => void;
   onUpdateTransitStation: (stationId: string, patch: Partial<Omit<TransitStation, "id">>) => void;
 };
@@ -12,12 +14,32 @@ type RoadPropertiesPanelProps = {
 export function RoadPropertiesPanel({
   road,
   transitStation,
+  collapsed,
+  onCollapsedChange,
   onUpdateRoad,
   onUpdateTransitStation,
 }: RoadPropertiesPanelProps) {
+  const panelClassName = `properties-panel ${collapsed ? "collapsed" : ""}`;
+  const toggleButton = (
+    <button
+      className="properties-tab"
+      type="button"
+      title={collapsed ? "Expand properties" : "Collapse properties"}
+      aria-label={collapsed ? "Expand properties" : "Collapse properties"}
+      onClick={() => onCollapsedChange(!collapsed)}
+    >
+      {collapsed ? "<" : ">"}
+    </button>
+  );
+
+  if (collapsed) {
+    return <aside className={panelClassName}>{toggleButton}</aside>;
+  }
+
   if (transitStation) {
     return (
-      <aside className="properties-panel">
+      <aside className={panelClassName}>
+        {toggleButton}
         <h2>Station</h2>
         <div className="property-id">{transitStation.id}</div>
 
@@ -49,7 +71,8 @@ export function RoadPropertiesPanel({
 
   if (!road) {
     return (
-      <aside className="properties-panel">
+      <aside className={panelClassName}>
+        {toggleButton}
         <h2>Properties</h2>
         <p className="muted">No road selected.</p>
       </aside>
@@ -69,7 +92,8 @@ export function RoadPropertiesPanel({
   };
 
   return (
-    <aside className="properties-panel">
+    <aside className={panelClassName}>
+      {toggleButton}
       <h2>Properties</h2>
       <div className="property-id">{road.id}</div>
 
