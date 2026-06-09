@@ -22,6 +22,21 @@ export function RoadPropertiesPanel({
         <div className="property-id">{transitStation.id}</div>
 
         <label className="field">
+          <span>Station type</span>
+          <select
+            value={transitStation.stationType ?? "transfer"}
+            onChange={(event) =>
+              onUpdateTransitStation(transitStation.id, {
+                stationType: event.target.value as "transfer" | "normal",
+              })
+            }
+          >
+            <option value="transfer">Transfer station</option>
+            <option value="normal">Normal station</option>
+          </select>
+        </label>
+
+        <label className="field">
           <span>Station name</span>
           <textarea
             value={transitStation.name}

@@ -80,7 +80,15 @@ export default function App() {
         event.preventDefault();
       }
 
-      if (event.key === "Escape" && (mode === "draw" || mode === "drawCurve" || mode === "drawTransit" || mode === "drawTransitCurve" || mode === "station")) {
+      if (
+        event.key === "Escape" &&
+        (mode === "draw" ||
+          mode === "drawCurve" ||
+          mode === "drawTransit" ||
+          mode === "drawTransitCurve" ||
+          mode === "transferStation" ||
+          mode === "normalStation")
+      ) {
         clearDraft();
         setMode("select");
         event.preventDefault();

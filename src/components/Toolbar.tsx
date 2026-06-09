@@ -128,14 +128,22 @@ function TransitToolIcon({
   kind,
   color,
 }: {
-  kind: "line" | "curve" | "station";
+  kind: "line" | "curve" | "transferStation" | "normalStation";
   color: string;
 }) {
-  if (kind === "station") {
+  if (kind === "transferStation") {
     return (
       <svg viewBox="0 0 32 32" aria-hidden="true">
-        <circle cx="16" cy="16" r="10" fill="#ffffff" stroke={color} strokeWidth="4" />
-        <circle cx="16" cy="16" r="4.5" fill={color} />
+        <circle cx="16" cy="16" r="10" fill="#ffffff" stroke="#111827" strokeWidth="4" />
+        <circle cx="16" cy="16" r="4.5" fill="#111827" />
+      </svg>
+    );
+  }
+
+  if (kind === "normalStation") {
+    return (
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="9.5" fill="#ffffff" stroke={color} strokeWidth="4" />
       </svg>
     );
   }
@@ -278,14 +286,25 @@ export function Toolbar({
             <TransitToolIcon kind="curve" color={transitColor} />
             <span>Curve</span>
           </button>
+        </div>
+        <div className="preset-grid transit-tool-grid">
           <button
-            className={`preset-button ${mode === "station" ? "active" : ""}`}
-            title="Station"
-            aria-label="Place station"
-            onClick={() => onModeChange("station")}
+            className={`preset-button ${mode === "transferStation" ? "active" : ""}`}
+            title="Transfer station"
+            aria-label="Place transfer station"
+            onClick={() => onModeChange("transferStation")}
           >
-            <TransitToolIcon kind="station" color={transitColor} />
-            <span>Station</span>
+            <TransitToolIcon kind="transferStation" color={transitColor} />
+            <span>Transfer</span>
+          </button>
+          <button
+            className={`preset-button ${mode === "normalStation" ? "active" : ""}`}
+            title="Normal station"
+            aria-label="Place normal station"
+            onClick={() => onModeChange("normalStation")}
+          >
+            <TransitToolIcon kind="normalStation" color={transitColor} />
+            <span>Normal</span>
           </button>
         </div>
       </div>

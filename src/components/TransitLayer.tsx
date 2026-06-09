@@ -113,6 +113,9 @@ export function TransitLayer({
 
       {renderStations && stations.map((station) => {
         const selected = station.id === selectedStationId;
+        const stationType = station.stationType ?? "transfer";
+        const stationColor = station.color ?? "#22c55e";
+        const outerStroke = selected ? "#2563eb" : stationType === "normal" ? stationColor : "#111827";
 
         return (
           <Group
@@ -140,8 +143,8 @@ export function TransitLayer({
               if (canSelect) onSelectStation(station.id);
             }}
           >
-            <Circle radius={selected ? 11 : 10} fill="#ffffff" stroke={selected ? "#2563eb" : "#111827"} strokeWidth={3} />
-            <Circle radius={4.5} fill={selected ? "#2563eb" : "#111827"} />
+            <Circle radius={selected ? 11 : 10} fill="#ffffff" stroke={outerStroke} strokeWidth={3} />
+            {stationType === "transfer" && <Circle radius={4.5} fill={selected ? "#2563eb" : "#111827"} />}
             <Text
               x={14}
               y={-12}

@@ -51,7 +51,7 @@ npm run tauri build
 - Click the canvas to add road nodes. Straight roads finish after 2 points, and curve roads finish after 4 points.
 - Use `Transit Line` or `Curved Transit` to create solid public transit routes with the selected route color.
 - Transit route nodes snap only to other transit route nodes.
-- Use `Station` to place a station icon anywhere on the canvas. Select the station to edit its multiline name.
+- Use `Transfer` or `Normal` station to place station icons anywhere on the canvas. Select the station to edit its type and multiline name.
 - Press `Esc` to cancel the current road.
 - Use `Select` to pick an existing road.
 - Drag selected node handles to reshape a road.
@@ -139,6 +139,8 @@ type TransitStation = {
   id: string;
   point: Point;
   name: string;
+  stationType?: "transfer" | "normal";
+  color?: string;
 };
 
 type ProjectData = {

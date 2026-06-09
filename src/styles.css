@@ -146,16 +146,16 @@ button.active {
 }
 
 .transit-tool-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .transit-tool-grid .preset-button {
-  min-height: 56px;
-  padding: 5px;
+  min-height: 58px;
+  padding: 6px;
 }
 
 .transit-tool-grid .preset-button span {
-  font-size: 8.8px;
+  font-size: 9.5px;
 }
 
 .transit-palette {

@@ -6,6 +6,7 @@ import type {
   RoadDefaults,
   RoadGeometryMode,
   RoadType,
+  TransitStationType,
   TransitRoute,
   TransitStation,
 } from "../types/road";
@@ -33,7 +34,7 @@ type RoadAction =
   | { type: "clearDraft" }
   | { type: "finishDraft"; geometryMode: RoadGeometryMode }
   | { type: "finishTransitDraft"; geometryMode: RoadGeometryMode }
-  | { type: "addTransitStation"; point: Point }
+  | { type: "addTransitStation"; point: Point; stationType: TransitStationType }
   | { type: "selectRoad"; roadId: string | null }
   | { type: "selectTransitRoute"; routeId: string | null }
   | { type: "selectTransitStation"; stationId: string | null }
@@ -106,6 +107,8 @@ function normalizeTransitStation(station: TransitStation): TransitStation {
   return {
     ...station,
     name: station.name ?? "Station",
+    stationType: station.stationType ?? "transfer",
+    color: station.color ?? "#22c55e",
   };
 }
 
@@ -127,11 +130,13 @@ function createTransitRoute(points: Point[], color: string, geometryMode: RoadGe
   });
 }
 
-function createTransitStation(point: Point): TransitStation {
+function createTransitStation(point: Point, stationType: TransitStationType, color: string): TransitStation {
   return {
     id: `station-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
     point,
     name: "Station",
+    stationType,
+    color,
   };
 }
 
@@ -255,7 +260,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
       );
     }
     case "addTransitStation": {
-      const station = createTransitStation(action.point);
+      const station = createTransitStation(action.point, action.stationType, state.transitColor);
       return applyProjectWithHistory(
         state,
         {
@@ -548,7 +553,10 @@ export function useRoadStore() {
     (geometryMode: RoadGeometryMode = "polyline") => dispatch({ type: "finishTransitDraft", geometryMode }),
     [],
   );
-  const addTransitStation = useCallback((point: Point) => dispatch({ type: "addTransitStation", point }), []);
+  const addTransitStation = useCallback(
+    (point: Point, stationType: TransitStationType) => dispatch({ type: "addTransitStation", point, stationType }),
+    [],
+  );
   const selectRoad = useCallback((roadId: string | null) => dispatch({ type: "selectRoad", roadId }), []);
   const selectTransitRoute = useCallback(
     (routeId: string | null) => dispatch({ type: "selectTransitRoute", routeId }),

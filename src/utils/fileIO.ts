@@ -75,7 +75,9 @@ function validateProjectData(value: unknown): ProjectData {
       !station.point ||
       typeof station.point.x !== "number" ||
       typeof station.point.y !== "number" ||
-      typeof station.name !== "string"
+      typeof station.name !== "string" ||
+      (station.stationType !== undefined && station.stationType !== "transfer" && station.stationType !== "normal") ||
+      (station.color !== undefined && typeof station.color !== "string")
     ) {
       throw new Error(`Invalid transit station at index ${index}.`);
     }
@@ -104,6 +106,8 @@ function validateProjectData(value: unknown): ProjectData {
     transitStations: (project.transitStations ?? []).map((station) => ({
       ...station,
       name: station.name ?? "Station",
+      stationType: station.stationType ?? "transfer",
+      color: station.color ?? "#22c55e",
     })),
   };
 }

@@ -33,7 +33,7 @@ type CanvasEditorProps = {
   onCanvasPoint: (point: Point) => void;
   onFinishDraft: (geometryMode: RoadGeometryMode) => void;
   onFinishTransitDraft: (geometryMode: RoadGeometryMode) => void;
-  onAddTransitStation: (point: Point) => void;
+  onAddTransitStation: (point: Point, stationType: "transfer" | "normal") => void;
   onAdoptRoadDefaults: (roadId: string) => void;
   onSelectRoad: (roadId: string | null) => void;
   onSelectTransitRoute: (routeId: string | null) => void;
@@ -318,8 +318,8 @@ export function CanvasEditor({
       return;
     }
 
-    if (mode === "station") {
-      onAddTransitStation(getWorldPoint(stage));
+    if (mode === "transferStation" || mode === "normalStation") {
+      onAddTransitStation(getWorldPoint(stage), mode === "transferStation" ? "transfer" : "normal");
       return;
     }
 
