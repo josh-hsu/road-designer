@@ -19,7 +19,7 @@ function getTextWidth(text: string): number {
 }
 
 export function RoadLabelLayer({ roads, zoom }: RoadLabelLayerProps) {
-  const labelScale = 1 / Math.max(0.25, zoom);
+  void zoom;
 
   return (
     <>
@@ -48,8 +48,6 @@ export function RoadLabelLayer({ roads, zoom }: RoadLabelLayerProps) {
             x={placement.point.x}
             y={placement.point.y}
             rotation={placement.rotation}
-            scaleX={labelScale}
-            scaleY={labelScale}
             listening={false}
           >
             {hasBadge && (
