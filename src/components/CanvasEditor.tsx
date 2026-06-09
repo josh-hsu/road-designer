@@ -252,11 +252,12 @@ export function CanvasEditor({
     [roads],
   );
   const visualSegments = useMemo(() => getVisualRoadSegments(sortedRoads), [sortedRoads]);
-  const controlRoads = useMemo(
-    () => [
-      ...sortedRoads.filter((road) => road.id !== selectedRoadId),
-      ...sortedRoads.filter((road) => road.id === selectedRoadId),
-    ],
+  const backgroundControlRoads = useMemo(
+    () => sortedRoads.filter((road) => road.id !== selectedRoadId),
+    [selectedRoadId, sortedRoads],
+  );
+  const selectedControlRoad = useMemo(
+    () => sortedRoads.find((road) => road.id === selectedRoadId) ?? null,
     [selectedRoadId, sortedRoads],
   );
   const segmentLevels = useMemo(() => groupSegmentsByLevel(visualSegments), [visualSegments]);
@@ -592,7 +593,7 @@ export function CanvasEditor({
               </Group>
             );
           })}
-          {controlRoads.map((road) => (
+          {backgroundControlRoads.map((road) => (
             <RoadShape
               key={`controls-${road.id}`}
               road={road}
@@ -622,6 +623,21 @@ export function CanvasEditor({
             onStationDragMove={onTransitStationDragMove}
             onStationDragEnd={onTransitStationDragEnd}
           />
+          {selectedControlRoad && (
+            <RoadShape
+              key={`selected-controls-${selectedControlRoad.id}`}
+              road={selectedControlRoad}
+              renderPhase="controls"
+              isSelected
+              canSelect={mode === "select" && !spacePressed && !isPanning}
+              getSnappedPoint={getSnappedPoint}
+              onSelect={onSelectRoad}
+              onPointDragStart={onRoadPointDragStart}
+              onPointDragMove={onRoadPointDragMove}
+              onPointDragEnd={onRoadPointDragEnd}
+              onSnapPreviewChange={setSnapPreview}
+            />
+          )}
           <RoadLabelLayer roads={sortedRoads} zoom={viewport.scale} />
           <TransitLayer
             routes={[]}
