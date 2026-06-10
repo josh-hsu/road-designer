@@ -38,7 +38,7 @@ function validateProjectData(value: unknown): ProjectData {
     if (
       typeof road.id !== "string" ||
       !Array.isArray(road.points) ||
-      (road.roadType !== "local" && road.roadType !== "arterial") ||
+      (road.roadType !== "local" && road.roadType !== "arterial" && road.roadType !== "tunnel") ||
       typeof road.width !== "number" ||
       typeof road.lanes !== "number" ||
       typeof road.divider !== "boolean" ||

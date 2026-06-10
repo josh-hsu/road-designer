@@ -62,6 +62,7 @@ export function getRoadLayerStyles(road: RenderableRoad, flattenedPoints: number
     points: flattenedPoints,
     stroke: style.outer,
     strokeWidth: road.width + style.outerPadding,
+    dash: style.outerDash,
   });
 
   layers.push({

@@ -105,6 +105,7 @@ export function RoadPropertiesPanel({
         >
           <option value="local">{ROAD_TYPE_LABELS.local}</option>
           <option value="arterial">{ROAD_TYPE_LABELS.arterial}</option>
+          <option value="tunnel">{ROAD_TYPE_LABELS.tunnel}</option>
         </select>
       </label>
 

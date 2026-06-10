@@ -55,7 +55,7 @@ npm run tauri build
 - Press `Esc` to cancel the current road.
 - Use `Select` to pick an existing road.
 - Drag selected node handles to reshape a road.
-- Edit `roadType`, `width`, `lanes`, `divider`, `oneWay`, direction, and `zLevel` in the right properties panel.
+- Edit `roadType`, `width`, `lanes`, `divider`, `oneWay`, direction, and `zLevel` in the right properties panel. `Tunnel` roads use a lighter body with dashed edges while keeping the normal road controls.
 - Set `Road kind = Connector` for ramp roads that connect endpoints to roads on different `zLevel` values.
 - For connector roads, set `Start zLevel` and `End zLevel` to control which layer each endpoint joins.
 - Use `Export JSON` to save the current project.
@@ -68,6 +68,7 @@ npm run tauri build
 - Draw two roads that cross geometrically but assign different `zLevel` values. The higher road should pass over the lower road without an intersection treatment.
 - Draw a `Draw Curve Road` bezier road crossing a polyline road on the same `zLevel`. The sampled curve should create a visual intersection at the crossing.
 - Enable roads with `lanes > 1` and arterial `divider = true`. Lane markings and divider should not visibly run through the intersection center.
+- Set a road's type to `Tunnel`. It should render with a lighter road body and dashed edge stroke while preserving normal lane markings, divider, labels, selection, and node editing.
 
 ## Manual Connector Road Tests
 
@@ -96,7 +97,7 @@ type Point = {
   y: number;
 };
 
-type RoadType = "local" | "arterial";
+type RoadType = "local" | "arterial" | "tunnel";
 
 type RoadKind = "standard" | "connector";
 

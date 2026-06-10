@@ -3,7 +3,7 @@ export type Point = {
   y: number;
 };
 
-export type RoadType = "local" | "arterial";
+export type RoadType = "local" | "arterial" | "tunnel";
 
 export type RoadGeometryMode = "polyline" | "bezier";
 

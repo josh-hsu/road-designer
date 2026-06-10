@@ -82,8 +82,9 @@ function PointerIcon() {
 }
 
 function RoadPresetIcon({ preset, curved, roadType }: { preset: RoadPreset; curved: boolean; roadType: RoadType }) {
-  const roadStroke = roadType === "arterial" ? "#535c66" : "#7b8490";
+  const roadStroke = roadType === "arterial" ? "#535c66" : roadType === "tunnel" ? "#aeb7c2" : "#7b8490";
   const edgeStroke = roadType === "arterial" ? "#20262d" : "#3d4652";
+  const edgeDash = roadType === "tunnel" ? "5 4" : undefined;
   const visualWidth = Math.max(7, Math.min(22, preset.width * 0.62));
   const laneOffsets = Array.from({ length: Math.max(0, preset.lanes - 1) }, (_, index) => {
     return 16 - visualWidth / 2 + (visualWidth / preset.lanes) * (index + 1);
@@ -92,7 +93,14 @@ function RoadPresetIcon({ preset, curved, roadType }: { preset: RoadPreset; curv
 
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true">
-      <path d={path} fill="none" stroke={edgeStroke} strokeWidth={visualWidth + 3} strokeLinecap="round" />
+      <path
+        d={path}
+        fill="none"
+        stroke={edgeStroke}
+        strokeWidth={visualWidth + 3}
+        strokeLinecap="round"
+        strokeDasharray={edgeDash}
+      />
       <path d={path} fill="none" stroke={roadStroke} strokeWidth={visualWidth} strokeLinecap="round" />
       {laneOffsets.map((offset) => {
         if (preset.divider && Math.abs(offset - 16) < 1.5) return null;
@@ -200,6 +208,7 @@ export function Toolbar({
         <select value={drawDefaults.roadType} onChange={(event) => onDrawRoadTypeChange(event.target.value as RoadType)}>
           <option value="local">{ROAD_TYPE_LABELS.local}</option>
           <option value="arterial">{ROAD_TYPE_LABELS.arterial}</option>
+          <option value="tunnel">{ROAD_TYPE_LABELS.tunnel}</option>
         </select>
       </label>
 

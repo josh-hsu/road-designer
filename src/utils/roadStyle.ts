@@ -10,6 +10,7 @@ type RoadVisualStyle = {
   selected: string;
   selectedHaloPadding: number;
   outerPadding: number;
+  outerDash?: number[];
 };
 
 const ROAD_STYLES: Record<RoadType, RoadVisualStyle> = {
@@ -35,15 +36,29 @@ const ROAD_STYLES: Record<RoadType, RoadVisualStyle> = {
     selectedHaloPadding: 12,
     outerPadding: 7,
   },
+  tunnel: {
+    body: "#aeb7c2",
+    outer: "#3d4652",
+    laneMarking: "#f8fafc",
+    laneMarkingWidth: 1.5,
+    divider: "#ffd166",
+    dividerWidth: 3,
+    selected: "#8b5cf6",
+    selectedHaloPadding: 10,
+    outerPadding: 5,
+    outerDash: [12, 9],
+  },
 };
 
 export const ROAD_TYPE_LABELS: Record<RoadType, string> = {
   local: "Local road",
   arterial: "Arterial road",
+  tunnel: "Tunnel",
 };
 
 export const ROAD_TYPE_PRIORITY: Record<RoadType, number> = {
   local: 1,
+  tunnel: 1,
   arterial: 2,
 };
 
@@ -69,6 +84,22 @@ export const DEFAULT_ROAD_BY_TYPE: Record<RoadType, RoadDefaults> = {
     width: 32,
     lanes: 4,
     divider: true,
+    zLevel: 0,
+    kind: "standard",
+    startZLevel: 0,
+    endZLevel: 0,
+    oneWay: false,
+    oneWayDirection: "forward",
+    name: "",
+    routeClass: "none",
+    routeNumber: "",
+    showLabel: true,
+  },
+  tunnel: {
+    roadType: "tunnel",
+    width: 18,
+    lanes: 2,
+    divider: false,
     zLevel: 0,
     kind: "standard",
     startZLevel: 0,
