@@ -3,13 +3,13 @@ import { CanvasEditor } from "./components/CanvasEditor";
 import { RoadPropertiesPanel } from "./components/RoadPropertiesPanel";
 import { Toolbar } from "./components/Toolbar";
 import { useRoadStore } from "./state/roadStore";
-import type { RoadGeometryMode, ToolMode } from "./types/road";
+import type { Point, RoadGeometryMode, ToolMode, TransitStationType } from "./types/road";
 import { exportProjectData, importProjectDataFromFile, importProjectDataWithDialog } from "./utils/fileIO";
 
 export default function App() {
   const [mode, setMode] = useState<ToolMode>("select");
   const [showGrid, setShowGrid] = useState(true);
-  const [keepDrawing, setKeepDrawing] = useState(true);
+  const [keepDrawing, setKeepDrawing] = useState(false);
   const [showDebugMasks, setShowDebugMasks] = useState(false);
   const [propertiesCollapsed, setPropertiesCollapsed] = useState(true);
   const browserImportRef = useRef<HTMLInputElement | null>(null);
@@ -28,6 +28,12 @@ export default function App() {
   } = roadStore;
 
   const handleModeChange = (nextMode: ToolMode) => {
+    if (nextMode === mode) {
+      clearDraft();
+      setMode("select");
+      return;
+    }
+
     if (nextMode === "select") {
       clearDraft();
     }
@@ -43,6 +49,13 @@ export default function App() {
 
   const handleFinishTransitDraft = (geometryMode: RoadGeometryMode) => {
     roadStore.finishTransitDraft(geometryMode);
+    if (!keepDrawing) {
+      setMode("select");
+    }
+  };
+
+  const handleAddTransitStation = (point: Point, stationType: TransitStationType) => {
+    roadStore.addTransitStation(point, stationType);
     if (!keepDrawing) {
       setMode("select");
     }
@@ -178,6 +191,17 @@ export default function App() {
         onModeChange={handleModeChange}
         onDrawRoadTypeChange={roadStore.setDrawType}
         onDrawPresetSelect={(toolMode, preset) => {
+          const sameActivePreset =
+            mode === toolMode &&
+            roadStore.drawDefaults.width === preset.width &&
+            roadStore.drawDefaults.lanes === preset.lanes &&
+            roadStore.drawDefaults.divider === preset.divider;
+          if (sameActivePreset) {
+            clearDraft();
+            setMode("select");
+            return;
+          }
+
           roadStore.setDrawPreset({
             ...roadStore.drawDefaults,
             ...preset,
@@ -220,7 +244,7 @@ export default function App() {
         onCanvasPoint={roadStore.addDraftPoint}
         onFinishDraft={handleFinishDraft}
         onFinishTransitDraft={handleFinishTransitDraft}
-        onAddTransitStation={roadStore.addTransitStation}
+        onAddTransitStation={handleAddTransitStation}
         onAdoptRoadDefaults={roadStore.adoptRoadDefaults}
         onSelectRoad={roadStore.selectRoad}
         onSelectTransitRoute={roadStore.selectTransitRoute}
