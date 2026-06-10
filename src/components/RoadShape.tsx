@@ -71,7 +71,7 @@ export function RoadShape({
             strokeWidth={layer.strokeWidth}
             dash={layer.dash}
             opacity={layer.opacity}
-            lineCap="round"
+            lineCap={layer.lineCap ?? "round"}
             lineJoin="round"
             listening={false}
           />

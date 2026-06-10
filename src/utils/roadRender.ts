@@ -8,6 +8,7 @@ export type RoadLayerStyle = {
   stroke: string;
   strokeWidth: number;
   dash?: number[];
+  lineCap?: "butt" | "round" | "square";
   opacity?: number;
 };
 
@@ -63,6 +64,7 @@ export function getRoadLayerStyles(road: RenderableRoad, flattenedPoints: number
     stroke: style.outer,
     strokeWidth: road.width + style.outerPadding,
     dash: style.outerDash,
+    lineCap: style.outerDash ? "butt" : "round",
   });
 
   layers.push({

@@ -46,7 +46,7 @@ const ROAD_STYLES: Record<RoadType, RoadVisualStyle> = {
     selected: "#8b5cf6",
     selectedHaloPadding: 10,
     outerPadding: 5,
-    outerDash: [12, 9],
+    outerDash: [22, 24],
   },
 };
 
