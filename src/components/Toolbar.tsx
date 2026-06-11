@@ -81,6 +81,18 @@ function PointerIcon() {
   );
 }
 
+function BladeIcon() {
+  return (
+    <svg viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="9" cy="22" r="3.4" fill="none" stroke="currentColor" strokeWidth="2.6" />
+      <circle cx="15" cy="22" r="3.4" fill="none" stroke="currentColor" strokeWidth="2.6" />
+      <path d="M12 19 L25 6" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+      <path d="M14.8 19.4 L26 15" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" />
+      <path d="M13 17.5 L17.2 21" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function RoadPresetIcon({ preset, curved, roadType }: { preset: RoadPreset; curved: boolean; roadType: RoadType }) {
   const roadStroke = roadType === "arterial" ? "#535c66" : roadType === "tunnel" ? "#aeb7c2" : "#7b8490";
   const edgeStroke = roadType === "arterial" ? "#20262d" : "#3d4652";
@@ -193,15 +205,26 @@ export function Toolbar({
     <aside className="toolbar">
       <div className="toolbar-title">Road Designer</div>
 
-      <button
-        className={`tool-button icon-tool-button ${mode === "select" ? "active" : ""}`}
-        title="Select"
-        aria-label="Select"
-        onClick={() => onModeChange("select")}
-      >
-        <PointerIcon />
-        <span>Select</span>
-      </button>
+      <div className="preset-grid mode-tool-grid">
+        <button
+          className={`preset-button ${mode === "select" ? "active" : ""}`}
+          title="Select"
+          aria-label="Select"
+          onClick={() => onModeChange("select")}
+        >
+          <PointerIcon />
+          <span>Select</span>
+        </button>
+        <button
+          className={`preset-button ${mode === "blade" ? "active" : ""}`}
+          title="Blade"
+          aria-label="Blade"
+          onClick={() => onModeChange("blade")}
+        >
+          <BladeIcon />
+          <span>Blade</span>
+        </button>
+      </div>
 
       <label className="field">
         <span>Road type</span>

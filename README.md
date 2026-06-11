@@ -49,6 +49,7 @@ npm run tauri build
 
 - Use `Draw Road` to create a road.
 - Click the canvas to add road nodes. Straight roads finish after 2 points, and curve roads finish after 4 points.
+- Use `Blade` to click a road or transit line and split it into two separate lines with copied properties and new IDs.
 - Use `Transit Line` or `Curved Transit` to create solid public transit routes with the selected route color.
 - Transit route nodes snap only to other transit route nodes.
 - Use `Transfer` or `Normal` station to place station icons anywhere on the canvas. Select the station to edit its type and multiline name.

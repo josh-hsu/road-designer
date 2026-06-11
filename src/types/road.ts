@@ -63,6 +63,7 @@ export type ToolMode =
   | "drawCurve"
   | "drawTransit"
   | "drawTransitCurve"
+  | "blade"
   | "transferStation"
   | "normalStation";
 

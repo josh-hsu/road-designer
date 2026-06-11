@@ -8,6 +8,8 @@ import { RoadShape } from "./RoadShape";
 import { StatusBar } from "./StatusBar";
 import { TransitLayer } from "./TransitLayer";
 import { useViewportStore } from "../state/viewportStore";
+import { findBladeHit } from "../utils/blade";
+import type { BladeHit } from "../utils/blade";
 import { getRoadIntersections } from "../utils/intersections";
 import { flattenPoints, getRoadRenderPoints } from "../utils/roadGeometry";
 import { getEndpointJunctions } from "../utils/roadRender";
@@ -38,6 +40,8 @@ type CanvasEditorProps = {
   onSelectRoad: (roadId: string | null) => void;
   onSelectTransitRoute: (routeId: string | null) => void;
   onSelectTransitStation: (stationId: string | null) => void;
+  onSplitRoad: (roadId: string, hit: BladeHit) => void;
+  onSplitTransitRoute: (routeId: string, hit: BladeHit) => void;
   onRoadPointDragStart: () => void;
   onRoadPointDragMove: (roadId: string, pointIndex: number, point: Point) => void;
   onRoadPointDragEnd: (roadId: string, pointIndex: number, point: Point) => void;
@@ -185,6 +189,8 @@ export function CanvasEditor({
   onSelectRoad,
   onSelectTransitRoute,
   onSelectTransitStation,
+  onSplitRoad,
+  onSplitTransitRoute,
   onRoadPointDragStart,
   onRoadPointDragMove,
   onRoadPointDragEnd,
@@ -306,6 +312,60 @@ export function CanvasEditor({
     };
   };
 
+  const splitTargetAtPoint = (point: Point): boolean => {
+    type Candidate = {
+      kind: "road" | "transit";
+      id: string;
+      hit: BladeHit;
+      threshold: number;
+      layerPriority: number;
+    };
+
+    const roadCandidates: Candidate[] = sortedRoads.flatMap((road) => {
+      const hit = findBladeHit(road.points, road.geometryMode, point);
+      const threshold = Math.max(12, road.width / 2 + 8);
+      if (!hit || hit.distance > threshold) return [];
+
+      return [{
+        kind: "road" as const,
+        id: road.id,
+        hit,
+        threshold,
+        layerPriority: getConnectorBaseZLevel(road),
+      }];
+    });
+
+    const transitCandidates: Candidate[] = transitRoutes.flatMap((route) => {
+      const hit = findBladeHit(route.points, route.geometryMode, point);
+      const threshold = 12;
+      if (!hit || hit.distance > threshold) return [];
+
+      return [{
+        kind: "transit" as const,
+        id: route.id,
+        hit,
+        threshold,
+        layerPriority: 1000,
+      }];
+    });
+
+    const bestCandidate = [...roadCandidates, ...transitCandidates].sort((a, b) => {
+      const normalizedDistance = a.hit.distance / a.threshold - b.hit.distance / b.threshold;
+      if (Math.abs(normalizedDistance) > 0.08) return normalizedDistance;
+      return b.layerPriority - a.layerPriority;
+    })[0];
+
+    if (!bestCandidate) return false;
+
+    if (bestCandidate.kind === "transit") {
+      onSplitTransitRoute(bestCandidate.id, bestCandidate.hit);
+    } else {
+      onSplitRoad(bestCandidate.id, bestCandidate.hit);
+    }
+
+    return true;
+  };
+
   const handleStageMouseDown = (event: Konva.KonvaEventObject<MouseEvent>) => {
     const stage = event.target.getStage();
     if (!stage) return;
@@ -315,6 +375,12 @@ export function CanvasEditor({
       event.evt.preventDefault();
       setIsPanning(true);
       lastPanPointRef.current = screenPoint;
+      return;
+    }
+
+    if (mode === "blade") {
+      event.evt.preventDefault();
+      splitTargetAtPoint(getWorldPoint(stage));
       return;
     }
 
@@ -408,7 +474,7 @@ export function CanvasEditor({
   const draftRenderPoints = mode === "drawCurve" || mode === "drawTransitCurve" ? getRoadRenderPoints(draftPoints, "bezier") : draftPoints;
 
   return (
-    <main className={`canvas-shell ${isPanning || spacePressed ? "is-panning" : ""}`} ref={containerRef}>
+    <main className={`canvas-shell ${isPanning || spacePressed ? "is-panning" : ""} ${mode === "blade" ? "is-blade" : ""}`} ref={containerRef}>
       <Stage
         width={size.width}
         height={size.height}

@@ -104,6 +104,7 @@ export default function App() {
           mode === "drawCurve" ||
           mode === "drawTransit" ||
           mode === "drawTransitCurve" ||
+          mode === "blade" ||
           mode === "transferStation" ||
           mode === "normalStation")
       ) {
@@ -249,6 +250,8 @@ export default function App() {
         onSelectRoad={roadStore.selectRoad}
         onSelectTransitRoute={roadStore.selectTransitRoute}
         onSelectTransitStation={roadStore.selectTransitStation}
+        onSplitRoad={roadStore.splitRoad}
+        onSplitTransitRoute={roadStore.splitTransitRoute}
         onRoadPointDragStart={roadStore.beginRoadPointDrag}
         onRoadPointDragMove={roadStore.previewRoadPointDrag}
         onRoadPointDragEnd={roadStore.endRoadPointDrag}

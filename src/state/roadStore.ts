@@ -10,6 +10,8 @@ import type {
   TransitRoute,
   TransitStation,
 } from "../types/road";
+import type { BladeHit } from "../utils/blade";
+import { splitPathAtHit } from "../utils/blade";
 import { DEFAULT_ROAD_BY_TYPE, getDefaultsForRoadType } from "../utils/roadStyle";
 
 type RoadState = {
@@ -51,6 +53,8 @@ type RoadAction =
   | { type: "deleteRoad"; roadId: string }
   | { type: "deleteTransitRoute"; routeId: string }
   | { type: "deleteTransitStation"; stationId: string }
+  | { type: "splitRoad"; roadId: string; hit: BladeHit }
+  | { type: "splitTransitRoute"; routeId: string; hit: BladeHit }
   | { type: "setDrawType"; roadType: RoadType }
   | { type: "setDrawPreset"; defaults: RoadDefaults }
   | { type: "setTransitColor"; color: string }
@@ -112,10 +116,14 @@ function normalizeTransitStation(station: TransitStation): TransitStation {
   };
 }
 
+function createId(prefix: string): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+}
+
 function createRoad(points: Point[], defaults: RoadDefaults, geometryMode: RoadGeometryMode): Road {
   return normalizeRoad({
     ...defaults,
-    id: `road-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    id: createId("road"),
     points,
     geometryMode,
   });
@@ -123,7 +131,7 @@ function createRoad(points: Point[], defaults: RoadDefaults, geometryMode: RoadG
 
 function createTransitRoute(points: Point[], color: string, geometryMode: RoadGeometryMode): TransitRoute {
   return normalizeTransitRoute({
-    id: `transit-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    id: createId("transit"),
     points,
     geometryMode,
     color,
@@ -132,7 +140,7 @@ function createTransitRoute(points: Point[], color: string, geometryMode: RoadGe
 
 function createTransitStation(point: Point, stationType: TransitStationType, color: string): TransitStation {
   return {
-    id: `station-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    id: createId("station"),
     point,
     name: "Station",
     stationType,
@@ -408,6 +416,72 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
         { selectedRoadId: null, selectedTransitRouteId: null, selectedTransitStationId: null },
       );
     }
+    case "splitRoad": {
+      const road = state.roads.find((currentRoad) => currentRoad.id === action.roadId);
+      if (!road) return state;
+
+      const split = splitPathAtHit(road.points, road.geometryMode, action.hit);
+      if (!split) return state;
+
+      const firstRoad = normalizeRoad({
+        ...road,
+        id: createId("road"),
+        points: split.startPoints,
+        geometryMode: split.geometryMode,
+      });
+      const secondRoad = normalizeRoad({
+        ...road,
+        id: createId("road"),
+        points: split.endPoints,
+        geometryMode: split.geometryMode,
+      });
+      const roads = state.roads.flatMap((currentRoad) =>
+        currentRoad.id === road.id ? [firstRoad, secondRoad] : [currentRoad],
+      );
+
+      return applyProjectWithHistory(
+        state,
+        {
+          roads,
+          transitRoutes: state.transitRoutes,
+          transitStations: state.transitStations,
+        },
+        { selectedRoadId: firstRoad.id, selectedTransitRouteId: null, selectedTransitStationId: null },
+      );
+    }
+    case "splitTransitRoute": {
+      const route = state.transitRoutes.find((currentRoute) => currentRoute.id === action.routeId);
+      if (!route) return state;
+
+      const split = splitPathAtHit(route.points, route.geometryMode, action.hit);
+      if (!split) return state;
+
+      const firstRoute = normalizeTransitRoute({
+        ...route,
+        id: createId("transit"),
+        points: split.startPoints,
+        geometryMode: split.geometryMode,
+      });
+      const secondRoute = normalizeTransitRoute({
+        ...route,
+        id: createId("transit"),
+        points: split.endPoints,
+        geometryMode: split.geometryMode,
+      });
+      const transitRoutes = state.transitRoutes.flatMap((currentRoute) =>
+        currentRoute.id === route.id ? [firstRoute, secondRoute] : [currentRoute],
+      );
+
+      return applyProjectWithHistory(
+        state,
+        {
+          roads: state.roads,
+          transitRoutes,
+          transitStations: state.transitStations,
+        },
+        { selectedRoadId: null, selectedTransitRouteId: firstRoute.id, selectedTransitStationId: null },
+      );
+    }
     case "setDrawType":
       return {
         ...state,
@@ -579,6 +653,11 @@ export function useRoadStore() {
     (stationId: string) => dispatch({ type: "deleteTransitStation", stationId }),
     [],
   );
+  const splitRoad = useCallback((roadId: string, hit: BladeHit) => dispatch({ type: "splitRoad", roadId, hit }), []);
+  const splitTransitRoute = useCallback(
+    (routeId: string, hit: BladeHit) => dispatch({ type: "splitTransitRoute", routeId, hit }),
+    [],
+  );
   const undo = useCallback(() => dispatch({ type: "undo" }), []);
   const redo = useCallback(() => dispatch({ type: "redo" }), []);
   const updateRoad = useCallback(
@@ -645,6 +724,8 @@ export function useRoadStore() {
     deleteRoad,
     deleteTransitRoute,
     deleteTransitStation,
+    splitRoad,
+    splitTransitRoute,
     undo,
     redo,
     updateRoad,

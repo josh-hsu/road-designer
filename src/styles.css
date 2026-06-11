@@ -177,6 +177,10 @@ button.active {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.mode-tool-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .transit-tool-grid .preset-button {
   min-height: 58px;
   padding: 6px;
@@ -232,6 +236,10 @@ button.active {
 
 .canvas-shell.is-panning {
   cursor: grabbing;
+}
+
+.canvas-shell.is-blade {
+  cursor: crosshair;
 }
 
 .status-bar {
