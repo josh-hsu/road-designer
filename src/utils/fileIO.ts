@@ -75,7 +75,8 @@ function validateProjectData(value: unknown): ProjectData {
       !Array.isArray(region.points) ||
       region.points.length < 3 ||
       region.points.length > 10 ||
-      typeof region.color !== "string"
+      typeof region.color !== "string" ||
+      (region.name !== undefined && typeof region.name !== "string")
     ) {
       throw new Error(`Invalid transit region at index ${index}.`);
     }
@@ -118,6 +119,7 @@ function validateProjectData(value: unknown): ProjectData {
     transitRegions: (project.transitRegions ?? []).map((region) => ({
       ...region,
       color: region.color ?? "#22c55e",
+      name: region.name ?? "",
     })),
     transitStations: (project.transitStations ?? []).map((station) => ({
       ...station,

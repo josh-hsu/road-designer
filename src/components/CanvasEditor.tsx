@@ -28,6 +28,7 @@ type CanvasEditorProps = {
   transitStations: TransitStation[];
   selectedRoadId: string | null;
   selectedTransitRouteId: string | null;
+  selectedTransitRegionId: string | null;
   selectedTransitStationId: string | null;
   draftPoints: Point[];
   transitColor: string;
@@ -41,6 +42,7 @@ type CanvasEditorProps = {
   onAdoptRoadDefaults: (roadId: string) => void;
   onSelectRoad: (roadId: string | null) => void;
   onSelectTransitRoute: (routeId: string | null) => void;
+  onSelectTransitRegion: (regionId: string | null) => void;
   onSelectTransitStation: (stationId: string | null) => void;
   onSplitRoad: (roadId: string, hit: BladeHit) => void;
   onSplitTransitRoute: (routeId: string, hit: BladeHit) => void;
@@ -49,6 +51,8 @@ type CanvasEditorProps = {
   onRoadPointDragEnd: (roadId: string, pointIndex: number, point: Point) => void;
   onTransitRoutePointDragMove: (routeId: string, pointIndex: number, point: Point) => void;
   onTransitRoutePointDragEnd: (routeId: string, pointIndex: number, point: Point) => void;
+  onTransitRegionPointDragMove: (regionId: string, pointIndex: number, point: Point) => void;
+  onTransitRegionPointDragEnd: (regionId: string, pointIndex: number, point: Point) => void;
   onTransitStationDragMove: (stationId: string, point: Point) => void;
   onTransitStationDragEnd: (stationId: string, point: Point) => void;
 };
@@ -171,6 +175,17 @@ function getIntersectionMaskSize(
   return widestCrossingRoad.width / 2 + 2;
 }
 
+function colorWithAlpha(color: string, alpha: number): string {
+  if (/^#[0-9a-f]{6}$/i.test(color)) {
+    const red = Number.parseInt(color.slice(1, 3), 16);
+    const green = Number.parseInt(color.slice(3, 5), 16);
+    const blue = Number.parseInt(color.slice(5, 7), 16);
+    return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+  }
+
+  return color;
+}
+
 export function CanvasEditor({
   mode,
   roads,
@@ -179,6 +194,7 @@ export function CanvasEditor({
   transitStations,
   selectedRoadId,
   selectedTransitRouteId,
+  selectedTransitRegionId,
   selectedTransitStationId,
   draftPoints,
   transitColor,
@@ -192,6 +208,7 @@ export function CanvasEditor({
   onAdoptRoadDefaults,
   onSelectRoad,
   onSelectTransitRoute,
+  onSelectTransitRegion,
   onSelectTransitStation,
   onSplitRoad,
   onSplitTransitRoute,
@@ -200,6 +217,8 @@ export function CanvasEditor({
   onRoadPointDragEnd,
   onTransitRoutePointDragMove,
   onTransitRoutePointDragEnd,
+  onTransitRegionPointDragMove,
+  onTransitRegionPointDragEnd,
   onTransitStationDragMove,
   onTransitStationDragEnd,
 }: CanvasEditorProps) {
@@ -446,6 +465,7 @@ export function CanvasEditor({
     if (event.target === stage || event.target.name() === "canvas-background") {
       onSelectRoad(null);
       onSelectTransitRoute(null);
+      onSelectTransitRegion(null);
       onSelectTransitStation(null);
     }
   };
@@ -702,15 +722,19 @@ export function CanvasEditor({
             regions={transitRegions}
             stations={[]}
             selectedRouteId={selectedTransitRouteId}
+            selectedRegionId={selectedTransitRegionId}
             selectedStationId={null}
             renderRegions
             renderStations={false}
             canSelect={mode === "select" && !spacePressed && !isPanning}
             onSelectRoute={onSelectTransitRoute}
+            onSelectRegion={onSelectTransitRegion}
             onSelectStation={onSelectTransitStation}
             onDragStart={onRoadPointDragStart}
             onRoutePointDragMove={onTransitRoutePointDragMove}
             onRoutePointDragEnd={onTransitRoutePointDragEnd}
+            onRegionPointDragMove={onTransitRegionPointDragMove}
+            onRegionPointDragEnd={onTransitRegionPointDragEnd}
             onStationDragMove={onTransitStationDragMove}
             onStationDragEnd={onTransitStationDragEnd}
           />
@@ -735,15 +759,19 @@ export function CanvasEditor({
             regions={[]}
             stations={transitStations}
             selectedRouteId={null}
+            selectedRegionId={null}
             selectedStationId={selectedTransitStationId}
             renderRoutes={false}
             renderRegions={false}
             canSelect={mode === "select" && !spacePressed && !isPanning}
             onSelectRoute={onSelectTransitRoute}
+            onSelectRegion={onSelectTransitRegion}
             onSelectStation={onSelectTransitStation}
             onDragStart={onRoadPointDragStart}
             onRoutePointDragMove={onTransitRoutePointDragMove}
             onRoutePointDragEnd={onTransitRoutePointDragEnd}
+            onRegionPointDragMove={onTransitRegionPointDragMove}
+            onRegionPointDragEnd={onTransitRegionPointDragEnd}
             onStationDragMove={onTransitStationDragMove}
             onStationDragEnd={onTransitStationDragEnd}
           />
@@ -752,8 +780,7 @@ export function CanvasEditor({
               <Line
                 points={flattenPoints(draftPoints)}
                 closed={draftPoints.length >= 3}
-                fill={draftPoints.length >= 3 ? transitColor : undefined}
-                opacity={draftPoints.length >= 3 ? 0.2 : 1}
+                fill={draftPoints.length >= 3 ? colorWithAlpha(transitColor, 0.2) : undefined}
                 stroke={transitColor}
                 strokeWidth={3}
                 dash={[9, 7]}

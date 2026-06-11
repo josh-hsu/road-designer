@@ -22,6 +22,7 @@ type RoadState = {
   transitStations: TransitStation[];
   selectedRoadId: string | null;
   selectedTransitRouteId: string | null;
+  selectedTransitRegionId: string | null;
   selectedTransitStationId: string | null;
   draftPoints: Point[];
   drawDefaults: RoadDefaults;
@@ -42,12 +43,16 @@ type RoadAction =
   | { type: "addTransitStation"; point: Point; stationType: TransitStationType }
   | { type: "selectRoad"; roadId: string | null }
   | { type: "selectTransitRoute"; routeId: string | null }
+  | { type: "selectTransitRegion"; regionId: string | null }
   | { type: "selectTransitStation"; stationId: string | null }
   | { type: "updateRoad"; roadId: string; patch: Partial<Omit<Road, "id">> }
+  | { type: "updateTransitRegion"; regionId: string; patch: Partial<Omit<TransitRegion, "id">> }
   | { type: "updateTransitStation"; stationId: string; patch: Partial<Omit<TransitStation, "id">> }
   | { type: "updateRoadPoint"; roadId: string; pointIndex: number; point: Point }
   | { type: "previewTransitRoutePointDrag"; routeId: string; pointIndex: number; point: Point }
   | { type: "endTransitRoutePointDrag"; routeId: string; pointIndex: number; point: Point }
+  | { type: "previewTransitRegionPointDrag"; regionId: string; pointIndex: number; point: Point }
+  | { type: "endTransitRegionPointDrag"; regionId: string; pointIndex: number; point: Point }
   | { type: "previewTransitStationDrag"; stationId: string; point: Point }
   | { type: "endTransitStationDrag"; stationId: string; point: Point }
   | { type: "beginRoadPointDrag" }
@@ -55,6 +60,7 @@ type RoadAction =
   | { type: "endRoadPointDrag"; roadId: string; pointIndex: number; point: Point }
   | { type: "deleteRoad"; roadId: string }
   | { type: "deleteTransitRoute"; routeId: string }
+  | { type: "deleteTransitRegion"; regionId: string }
   | { type: "deleteTransitStation"; stationId: string }
   | { type: "splitRoad"; roadId: string; hit: BladeHit }
   | { type: "splitTransitRoute"; routeId: string; hit: BladeHit }
@@ -74,6 +80,7 @@ const initialState: RoadState = {
   transitStations: [],
   selectedRoadId: null,
   selectedTransitRouteId: null,
+  selectedTransitRegionId: null,
   selectedTransitStationId: null,
   draftPoints: [],
   drawDefaults: getDefaultsForRoadType("local"),
@@ -115,6 +122,7 @@ function normalizeTransitRegion(region: TransitRegion): TransitRegion {
   return {
     ...region,
     color: region.color ?? "#22c55e",
+    name: region.name ?? "",
   };
 }
 
@@ -154,6 +162,7 @@ function createTransitRegion(points: Point[], color: string): TransitRegion {
     id: createId("region"),
     points,
     color,
+    name: "",
   });
 }
 
@@ -180,13 +189,14 @@ function getSnapshot(state: RoadState): ProjectData {
 function applyProjectWithHistory(
   state: RoadState,
   project: Pick<RoadState, "roads" | "transitRoutes" | "transitRegions" | "transitStations">,
-  selection: Partial<Pick<RoadState, "selectedRoadId" | "selectedTransitRouteId" | "selectedTransitStationId">> = {},
+  selection: Partial<Pick<RoadState, "selectedRoadId" | "selectedTransitRouteId" | "selectedTransitRegionId" | "selectedTransitStationId">> = {},
 ): RoadState {
   return {
     ...state,
     ...project,
     selectedRoadId: selection.selectedRoadId ?? state.selectedRoadId,
     selectedTransitRouteId: selection.selectedTransitRouteId ?? state.selectedTransitRouteId,
+    selectedTransitRegionId: selection.selectedTransitRegionId ?? state.selectedTransitRegionId,
     selectedTransitStationId: selection.selectedTransitStationId ?? state.selectedTransitStationId,
     past: [...state.past, getSnapshot(state)],
     future: [],
@@ -197,7 +207,7 @@ function applyRoadsWithHistory(state: RoadState, roads: Road[], selectedRoadId =
   return applyProjectWithHistory(
     state,
     { roads, transitRoutes: state.transitRoutes, transitRegions: state.transitRegions, transitStations: state.transitStations },
-    { selectedRoadId, selectedTransitRouteId: null, selectedTransitStationId: null },
+    { selectedRoadId, selectedTransitRouteId: null, selectedTransitRegionId: null, selectedTransitStationId: null },
   );
 }
 
@@ -230,6 +240,21 @@ function updateTransitStationPoint(
   point: Point,
 ): TransitStation[] {
   return transitStations.map((station) => (station.id === stationId ? { ...station, point } : station));
+}
+
+function updateTransitRegionPoint(
+  transitRegions: TransitRegion[],
+  regionId: string,
+  pointIndex: number,
+  point: Point,
+): TransitRegion[] {
+  return transitRegions.map((region) => {
+    if (region.id !== regionId) return region;
+    return {
+      ...region,
+      points: region.points.map((currentPoint, index) => (index === pointIndex ? point : currentPoint)),
+    };
+  });
 }
 
 function roadReducer(state: RoadState, action: RoadAction): RoadState {
@@ -285,7 +310,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
           transitRegions: state.transitRegions,
           transitStations: state.transitStations,
         },
-        { selectedRoadId: null, selectedTransitRouteId: route.id, selectedTransitStationId: null },
+        { selectedRoadId: null, selectedTransitRouteId: route.id, selectedTransitRegionId: null, selectedTransitStationId: null },
       );
     }
     case "finishTransitRegion": {
@@ -306,7 +331,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
           transitRegions: [...state.transitRegions, region],
           transitStations: state.transitStations,
         },
-        { selectedRoadId: null, selectedTransitRouteId: null, selectedTransitStationId: null },
+        { selectedRoadId: null, selectedTransitRouteId: null, selectedTransitRegionId: region.id, selectedTransitStationId: null },
       );
     }
     case "addTransitStation": {
@@ -319,7 +344,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
           transitRegions: state.transitRegions,
           transitStations: [...state.transitStations, station],
         },
-        { selectedRoadId: null, selectedTransitRouteId: null, selectedTransitStationId: station.id },
+        { selectedRoadId: null, selectedTransitRouteId: null, selectedTransitRegionId: null, selectedTransitStationId: station.id },
       );
     }
     case "selectRoad":
@@ -327,6 +352,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
         ...state,
         selectedRoadId: action.roadId,
         selectedTransitRouteId: null,
+        selectedTransitRegionId: null,
         selectedTransitStationId: null,
       };
     case "selectTransitRoute":
@@ -334,6 +360,15 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
         ...state,
         selectedRoadId: null,
         selectedTransitRouteId: action.routeId,
+        selectedTransitRegionId: null,
+        selectedTransitStationId: null,
+      };
+    case "selectTransitRegion":
+      return {
+        ...state,
+        selectedRoadId: null,
+        selectedTransitRouteId: null,
+        selectedTransitRegionId: action.regionId,
         selectedTransitStationId: null,
       };
     case "selectTransitStation":
@@ -341,6 +376,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
         ...state,
         selectedRoadId: null,
         selectedTransitRouteId: null,
+        selectedTransitRegionId: null,
         selectedTransitStationId: action.stationId,
       };
     case "updateRoad": {
@@ -356,6 +392,17 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
         transitRoutes: state.transitRoutes,
         transitRegions: state.transitRegions,
         transitStations,
+      });
+    }
+    case "updateTransitRegion": {
+      const transitRegions = state.transitRegions.map((region) =>
+        region.id === action.regionId ? normalizeTransitRegion({ ...region, ...action.patch }) : region,
+      );
+      return applyProjectWithHistory(state, {
+        roads: state.roads,
+        transitRoutes: state.transitRoutes,
+        transitRegions,
+        transitStations: state.transitStations,
       });
     }
     case "updateRoadPoint": {
@@ -383,6 +430,35 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
       return {
         ...state,
         transitRoutes,
+        dragSnapshot: null,
+        past: [...state.past, state.dragSnapshot],
+        future: [],
+      };
+    }
+    case "previewTransitRegionPointDrag":
+      return {
+        ...state,
+        transitRegions: updateTransitRegionPoint(state.transitRegions, action.regionId, action.pointIndex, action.point),
+      };
+    case "endTransitRegionPointDrag": {
+      const transitRegions = updateTransitRegionPoint(
+        state.transitRegions,
+        action.regionId,
+        action.pointIndex,
+        action.point,
+      );
+      if (!state.dragSnapshot) {
+        return applyProjectWithHistory(state, {
+          roads: state.roads,
+          transitRoutes: state.transitRoutes,
+          transitRegions,
+          transitStations: state.transitStations,
+        });
+      }
+
+      return {
+        ...state,
+        transitRegions,
         dragSnapshot: null,
         past: [...state.past, state.dragSnapshot],
         future: [],
@@ -449,7 +525,19 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
           transitRegions: state.transitRegions,
           transitStations: state.transitStations,
         },
-        { selectedRoadId: null, selectedTransitRouteId: null, selectedTransitStationId: null },
+        { selectedRoadId: null, selectedTransitRouteId: null, selectedTransitRegionId: null, selectedTransitStationId: null },
+      );
+    }
+    case "deleteTransitRegion": {
+      return applyProjectWithHistory(
+        state,
+        {
+          roads: state.roads,
+          transitRoutes: state.transitRoutes,
+          transitRegions: state.transitRegions.filter((region) => region.id !== action.regionId),
+          transitStations: state.transitStations,
+        },
+        { selectedRoadId: null, selectedTransitRouteId: null, selectedTransitRegionId: null, selectedTransitStationId: null },
       );
     }
     case "deleteTransitStation": {
@@ -461,7 +549,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
           transitRegions: state.transitRegions,
           transitStations: state.transitStations.filter((station) => station.id !== action.stationId),
         },
-        { selectedRoadId: null, selectedTransitRouteId: null, selectedTransitStationId: null },
+        { selectedRoadId: null, selectedTransitRouteId: null, selectedTransitRegionId: null, selectedTransitStationId: null },
       );
     }
     case "splitRoad": {
@@ -495,7 +583,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
           transitRegions: state.transitRegions,
           transitStations: state.transitStations,
         },
-        { selectedRoadId: firstRoad.id, selectedTransitRouteId: null, selectedTransitStationId: null },
+        { selectedRoadId: firstRoad.id, selectedTransitRouteId: null, selectedTransitRegionId: null, selectedTransitStationId: null },
       );
     }
     case "splitTransitRoute": {
@@ -529,7 +617,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
           transitRegions: state.transitRegions,
           transitStations: state.transitStations,
         },
-        { selectedRoadId: null, selectedTransitRouteId: firstRoute.id, selectedTransitStationId: null },
+        { selectedRoadId: null, selectedTransitRouteId: firstRoute.id, selectedTransitRegionId: null, selectedTransitStationId: null },
       );
     }
     case "setDrawType":
@@ -602,7 +690,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
           transitRegions: (action.project.transitRegions ?? []).map(normalizeTransitRegion),
           transitStations: (action.project.transitStations ?? []).map(normalizeTransitStation),
         },
-        { selectedRoadId: null, selectedTransitRouteId: null, selectedTransitStationId: null },
+        { selectedRoadId: null, selectedTransitRouteId: null, selectedTransitRegionId: null, selectedTransitStationId: null },
       );
     case "undo": {
       const previous = state.past[state.past.length - 1];
@@ -615,6 +703,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
         transitStations: (previous.transitStations ?? []).map(normalizeTransitStation),
         selectedRoadId: null,
         selectedTransitRouteId: null,
+        selectedTransitRegionId: null,
         selectedTransitStationId: null,
         draftPoints: [],
         draftDefaults: null,
@@ -634,6 +723,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
         transitStations: (next.transitStations ?? []).map(normalizeTransitStation),
         selectedRoadId: null,
         selectedTransitRouteId: null,
+        selectedTransitRegionId: null,
         selectedTransitStationId: null,
         draftPoints: [],
         draftDefaults: null,
@@ -658,6 +748,11 @@ export function useRoadStore() {
   const selectedTransitStation = useMemo(
     () => state.transitStations.find((station) => station.id === state.selectedTransitStationId) ?? null,
     [state.transitStations, state.selectedTransitStationId],
+  );
+
+  const selectedTransitRegion = useMemo(
+    () => state.transitRegions.find((region) => region.id === state.selectedTransitRegionId) ?? null,
+    [state.transitRegions, state.selectedTransitRegionId],
   );
 
   const projectData = useMemo<ProjectData>(
@@ -691,6 +786,10 @@ export function useRoadStore() {
     (routeId: string | null) => dispatch({ type: "selectTransitRoute", routeId }),
     [],
   );
+  const selectTransitRegion = useCallback(
+    (regionId: string | null) => dispatch({ type: "selectTransitRegion", regionId }),
+    [],
+  );
   const selectTransitStation = useCallback(
     (stationId: string | null) => dispatch({ type: "selectTransitStation", stationId }),
     [],
@@ -704,6 +803,10 @@ export function useRoadStore() {
   const loadProject = useCallback((project: ProjectData) => dispatch({ type: "loadProject", project }), []);
   const deleteRoad = useCallback((roadId: string) => dispatch({ type: "deleteRoad", roadId }), []);
   const deleteTransitRoute = useCallback((routeId: string) => dispatch({ type: "deleteTransitRoute", routeId }), []);
+  const deleteTransitRegion = useCallback(
+    (regionId: string) => dispatch({ type: "deleteTransitRegion", regionId }),
+    [],
+  );
   const deleteTransitStation = useCallback(
     (stationId: string) => dispatch({ type: "deleteTransitStation", stationId }),
     [],
@@ -722,6 +825,11 @@ export function useRoadStore() {
   const updateTransitStation = useCallback(
     (stationId: string, patch: Partial<Omit<TransitStation, "id">>) =>
       dispatch({ type: "updateTransitStation", stationId, patch }),
+    [],
+  );
+  const updateTransitRegion = useCallback(
+    (regionId: string, patch: Partial<Omit<TransitRegion, "id">>) =>
+      dispatch({ type: "updateTransitRegion", regionId, patch }),
     [],
   );
   const updateRoadPoint = useCallback(
@@ -750,6 +858,16 @@ export function useRoadStore() {
       dispatch({ type: "endTransitRoutePointDrag", routeId, pointIndex, point }),
     [],
   );
+  const previewTransitRegionPointDrag = useCallback(
+    (regionId: string, pointIndex: number, point: Point) =>
+      dispatch({ type: "previewTransitRegionPointDrag", regionId, pointIndex, point }),
+    [],
+  );
+  const endTransitRegionPointDrag = useCallback(
+    (regionId: string, pointIndex: number, point: Point) =>
+      dispatch({ type: "endTransitRegionPointDrag", regionId, pointIndex, point }),
+    [],
+  );
   const previewTransitStationDrag = useCallback(
     (stationId: string, point: Point) => dispatch({ type: "previewTransitStationDrag", stationId, point }),
     [],
@@ -763,6 +881,7 @@ export function useRoadStore() {
     ...state,
     selectedRoad,
     selectedTransitStation,
+    selectedTransitRegion,
     projectData,
     addDraftPoint,
     clearDraft,
@@ -772,6 +891,7 @@ export function useRoadStore() {
     addTransitStation,
     selectRoad,
     selectTransitRoute,
+    selectTransitRegion,
     selectTransitStation,
     setDrawType,
     setDrawPreset,
@@ -779,12 +899,14 @@ export function useRoadStore() {
     loadProject,
     deleteRoad,
     deleteTransitRoute,
+    deleteTransitRegion,
     deleteTransitStation,
     splitRoad,
     splitTransitRoute,
     undo,
     redo,
     updateRoad,
+    updateTransitRegion,
     updateTransitStation,
     updateRoadPoint,
     beginRoadPointDrag,
@@ -792,6 +914,8 @@ export function useRoadStore() {
     endRoadPointDrag,
     previewTransitRoutePointDrag,
     endTransitRoutePointDrag,
+    previewTransitRegionPointDrag,
+    endTransitRegionPointDrag,
     previewTransitStationDrag,
     endTransitStationDrag,
     setTransitColor: (color: string) => dispatch({ type: "setTransitColor", color }),

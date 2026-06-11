@@ -17,11 +17,13 @@ export default function App() {
   const {
     clearDraft,
     deleteRoad,
+    deleteTransitRegion,
     deleteTransitRoute,
     deleteTransitStation,
     finishDraft,
     redo,
     selectedRoadId,
+    selectedTransitRegionId,
     selectedTransitRouteId,
     selectedTransitStationId,
     undo,
@@ -69,8 +71,8 @@ export default function App() {
   };
 
   useEffect(() => {
-    setPropertiesCollapsed(!roadStore.selectedRoad && !roadStore.selectedTransitStation);
-  }, [roadStore.selectedRoad, roadStore.selectedTransitStation]);
+    setPropertiesCollapsed(!roadStore.selectedRoad && !roadStore.selectedTransitRegion && !roadStore.selectedTransitStation);
+  }, [roadStore.selectedRoad, roadStore.selectedTransitRegion, roadStore.selectedTransitStation]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -138,6 +140,11 @@ export default function App() {
           event.preventDefault();
           return;
         }
+        if (selectedTransitRegionId) {
+          deleteTransitRegion(selectedTransitRegionId);
+          event.preventDefault();
+          return;
+        }
         if (selectedTransitStationId) {
           deleteTransitStation(selectedTransitStationId);
           event.preventDefault();
@@ -152,6 +159,7 @@ export default function App() {
   }, [
     clearDraft,
     deleteRoad,
+    deleteTransitRegion,
     deleteTransitRoute,
     deleteTransitStation,
     handleFinishDraft,
@@ -160,6 +168,7 @@ export default function App() {
     mode,
     redo,
     selectedRoadId,
+    selectedTransitRegionId,
     selectedTransitRouteId,
     selectedTransitStationId,
     undo,
@@ -253,6 +262,7 @@ export default function App() {
         transitStations={roadStore.transitStations}
         selectedRoadId={roadStore.selectedRoadId}
         selectedTransitRouteId={roadStore.selectedTransitRouteId}
+        selectedTransitRegionId={roadStore.selectedTransitRegionId}
         selectedTransitStationId={roadStore.selectedTransitStationId}
         draftPoints={roadStore.draftPoints}
         transitColor={roadStore.transitColor}
@@ -266,6 +276,7 @@ export default function App() {
         onAdoptRoadDefaults={roadStore.adoptRoadDefaults}
         onSelectRoad={roadStore.selectRoad}
         onSelectTransitRoute={roadStore.selectTransitRoute}
+        onSelectTransitRegion={roadStore.selectTransitRegion}
         onSelectTransitStation={roadStore.selectTransitStation}
         onSplitRoad={roadStore.splitRoad}
         onSplitTransitRoute={roadStore.splitTransitRoute}
@@ -274,15 +285,19 @@ export default function App() {
         onRoadPointDragEnd={roadStore.endRoadPointDrag}
         onTransitRoutePointDragMove={roadStore.previewTransitRoutePointDrag}
         onTransitRoutePointDragEnd={roadStore.endTransitRoutePointDrag}
+        onTransitRegionPointDragMove={roadStore.previewTransitRegionPointDrag}
+        onTransitRegionPointDragEnd={roadStore.endTransitRegionPointDrag}
         onTransitStationDragMove={roadStore.previewTransitStationDrag}
         onTransitStationDragEnd={roadStore.endTransitStationDrag}
       />
       <RoadPropertiesPanel
         road={roadStore.selectedRoad}
+        transitRegion={roadStore.selectedTransitRegion}
         transitStation={roadStore.selectedTransitStation}
         collapsed={propertiesCollapsed}
         onCollapsedChange={setPropertiesCollapsed}
         onUpdateRoad={roadStore.updateRoad}
+        onUpdateTransitRegion={roadStore.updateTransitRegion}
         onUpdateTransitStation={roadStore.updateTransitStation}
       />
     </div>

@@ -24,6 +24,7 @@ export type TransitRegion = {
   id: string;
   points: Point[];
   color: string;
+  name?: string;
 };
 
 export type TransitStationType = "transfer" | "normal";

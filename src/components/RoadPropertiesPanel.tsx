@@ -1,22 +1,26 @@
 import type { ChangeEvent } from "react";
-import type { OneWayDirection, Road, RoadKind, RoadType, RouteClass, TransitStation } from "../types/road";
+import type { OneWayDirection, Road, RoadKind, RoadType, RouteClass, TransitRegion, TransitStation } from "../types/road";
 import { ROAD_TYPE_LABELS } from "../utils/roadStyle";
 
 type RoadPropertiesPanelProps = {
   road: Road | null;
+  transitRegion: TransitRegion | null;
   transitStation: TransitStation | null;
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
   onUpdateRoad: (roadId: string, patch: Partial<Omit<Road, "id">>) => void;
+  onUpdateTransitRegion: (regionId: string, patch: Partial<Omit<TransitRegion, "id">>) => void;
   onUpdateTransitStation: (stationId: string, patch: Partial<Omit<TransitStation, "id">>) => void;
 };
 
 export function RoadPropertiesPanel({
   road,
+  transitRegion,
   transitStation,
   collapsed,
   onCollapsedChange,
   onUpdateRoad,
+  onUpdateTransitRegion,
   onUpdateTransitStation,
 }: RoadPropertiesPanelProps) {
   const panelClassName = `properties-panel ${collapsed ? "collapsed" : ""}`;
@@ -65,6 +69,27 @@ export function RoadPropertiesPanel({
             onChange={(event) => onUpdateTransitStation(transitStation.id, { name: event.target.value })}
           />
         </label>
+      </aside>
+    );
+  }
+
+  if (transitRegion) {
+    return (
+      <aside className={panelClassName}>
+        {toggleButton}
+        <h2>Region</h2>
+        <div className="property-id">{transitRegion.id}</div>
+
+        <label className="field">
+          <span>Region name</span>
+          <textarea
+            value={transitRegion.name ?? ""}
+            rows={3}
+            onChange={(event) => onUpdateTransitRegion(transitRegion.id, { name: event.target.value })}
+          />
+        </label>
+
+        <div className="points-summary">{transitRegion.points.length} nodes</div>
       </aside>
     );
   }
