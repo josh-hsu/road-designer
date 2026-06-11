@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Circle, Group, Layer, Line, Rect, Stage, Text } from "react-konva";
 import type Konva from "konva";
-import type { Point, Road, RoadGeometryMode, ToolMode, TransitRoute, TransitStation } from "../types/road";
+import type { Point, Road, RoadGeometryMode, ToolMode, TransitRegion, TransitRoute, TransitStation } from "../types/road";
 import { GridLayer } from "./GridLayer";
 import { RoadLabelLayer } from "./RoadLabelLayer";
 import { RoadShape } from "./RoadShape";
@@ -24,6 +24,7 @@ type CanvasEditorProps = {
   mode: ToolMode;
   roads: Road[];
   transitRoutes: TransitRoute[];
+  transitRegions: TransitRegion[];
   transitStations: TransitStation[];
   selectedRoadId: string | null;
   selectedTransitRouteId: string | null;
@@ -35,6 +36,7 @@ type CanvasEditorProps = {
   onCanvasPoint: (point: Point) => void;
   onFinishDraft: (geometryMode: RoadGeometryMode) => void;
   onFinishTransitDraft: (geometryMode: RoadGeometryMode) => void;
+  onFinishTransitRegion: () => void;
   onAddTransitStation: (point: Point, stationType: "transfer" | "normal") => void;
   onAdoptRoadDefaults: (roadId: string) => void;
   onSelectRoad: (roadId: string | null) => void;
@@ -173,6 +175,7 @@ export function CanvasEditor({
   mode,
   roads,
   transitRoutes,
+  transitRegions,
   transitStations,
   selectedRoadId,
   selectedTransitRouteId,
@@ -184,6 +187,7 @@ export function CanvasEditor({
   onCanvasPoint,
   onFinishDraft,
   onFinishTransitDraft,
+  onFinishTransitRegion,
   onAddTransitStation,
   onAdoptRoadDefaults,
   onSelectRoad,
@@ -312,6 +316,11 @@ export function CanvasEditor({
     };
   };
 
+  const isNearRegionStart = (point: Point): boolean => {
+    const startPoint = draftPoints[0];
+    return Boolean(startPoint && draftPoints.length >= 3 && distanceBetween(point, startPoint) <= 12);
+  };
+
   const splitTargetAtPoint = (point: Point): boolean => {
     type Candidate = {
       kind: "road" | "transit";
@@ -386,6 +395,20 @@ export function CanvasEditor({
 
     if (mode === "transferStation" || mode === "normalStation") {
       onAddTransitStation(getWorldPoint(stage), mode === "transferStation" ? "transfer" : "normal");
+      return;
+    }
+
+    if (mode === "drawTransitRegion") {
+      const point = getWorldPoint(stage);
+      if (isNearRegionStart(point)) {
+        onFinishTransitRegion();
+        return;
+      }
+
+      onCanvasPoint(point);
+      if (draftPoints.length + 1 >= 10) {
+        onFinishTransitRegion();
+      }
       return;
     }
 
@@ -470,7 +493,7 @@ export function CanvasEditor({
     zoomAt(getScreenPoint(stage), viewport.scale * zoomFactor);
   };
 
-  const isTransitDraft = mode === "drawTransit" || mode === "drawTransitCurve";
+  const isTransitDraft = mode === "drawTransit" || mode === "drawTransitCurve" || mode === "drawTransitRegion";
   const draftRenderPoints = mode === "drawCurve" || mode === "drawTransitCurve" ? getRoadRenderPoints(draftPoints, "bezier") : draftPoints;
 
   return (
@@ -676,9 +699,11 @@ export function CanvasEditor({
           ))}
           <TransitLayer
             routes={transitRoutes}
+            regions={transitRegions}
             stations={[]}
             selectedRouteId={selectedTransitRouteId}
             selectedStationId={null}
+            renderRegions
             renderStations={false}
             canSelect={mode === "select" && !spacePressed && !isPanning}
             onSelectRoute={onSelectTransitRoute}
@@ -707,10 +732,12 @@ export function CanvasEditor({
           <RoadLabelLayer roads={sortedRoads} zoom={viewport.scale} />
           <TransitLayer
             routes={[]}
+            regions={[]}
             stations={transitStations}
             selectedRouteId={null}
             selectedStationId={selectedTransitStationId}
             renderRoutes={false}
+            renderRegions={false}
             canSelect={mode === "select" && !spacePressed && !isPanning}
             onSelectRoute={onSelectTransitRoute}
             onSelectStation={onSelectTransitStation}
@@ -720,7 +747,34 @@ export function CanvasEditor({
             onStationDragMove={onTransitStationDragMove}
             onStationDragEnd={onTransitStationDragEnd}
           />
-          {draftPoints.length > 0 && (
+          {mode === "drawTransitRegion" && draftPoints.length > 0 && (
+            <>
+              <Line
+                points={flattenPoints(draftPoints)}
+                closed={draftPoints.length >= 3}
+                fill={draftPoints.length >= 3 ? transitColor : undefined}
+                opacity={draftPoints.length >= 3 ? 0.2 : 1}
+                stroke={transitColor}
+                strokeWidth={3}
+                dash={[9, 7]}
+                lineJoin="round"
+                listening={false}
+              />
+              {draftPoints.map((point, index) => (
+                <Circle
+                  key={index}
+                  x={point.x}
+                  y={point.y}
+                  radius={index === 0 ? 6 : 5}
+                  fill="#ffffff"
+                  stroke={transitColor}
+                  strokeWidth={2}
+                  listening={false}
+                />
+              ))}
+            </>
+          )}
+          {mode !== "drawTransitRegion" && draftPoints.length > 0 && (
             <>
               {(mode === "drawCurve" || mode === "drawTransitCurve") && (
                 <Line

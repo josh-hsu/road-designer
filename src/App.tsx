@@ -54,6 +54,13 @@ export default function App() {
     }
   };
 
+  const handleFinishTransitRegion = () => {
+    roadStore.finishTransitRegion();
+    if (!keepDrawing) {
+      setMode("select");
+    }
+  };
+
   const handleAddTransitStation = (point: Point, stationType: TransitStationType) => {
     roadStore.addTransitStation(point, stationType);
     if (!keepDrawing) {
@@ -88,7 +95,13 @@ export default function App() {
         return;
       }
 
-      if (event.key === "Enter" && (mode === "draw" || mode === "drawCurve" || mode === "drawTransit" || mode === "drawTransitCurve")) {
+      if (event.key === "Enter" && (mode === "draw" || mode === "drawCurve" || mode === "drawTransit" || mode === "drawTransitCurve" || mode === "drawTransitRegion")) {
+        if (mode === "drawTransitRegion") {
+          handleFinishTransitRegion();
+          event.preventDefault();
+          return;
+        }
+
         const geometryMode = mode === "drawCurve" || mode === "drawTransitCurve" ? "bezier" : "polyline";
         if (mode === "drawTransit" || mode === "drawTransitCurve") {
           handleFinishTransitDraft(geometryMode);
@@ -104,6 +117,7 @@ export default function App() {
           mode === "drawCurve" ||
           mode === "drawTransit" ||
           mode === "drawTransitCurve" ||
+          mode === "drawTransitRegion" ||
           mode === "blade" ||
           mode === "transferStation" ||
           mode === "normalStation")
@@ -142,6 +156,7 @@ export default function App() {
     deleteTransitStation,
     handleFinishDraft,
     handleFinishTransitDraft,
+    handleFinishTransitRegion,
     mode,
     redo,
     selectedRoadId,
@@ -234,6 +249,7 @@ export default function App() {
         mode={mode}
         roads={roadStore.roads}
         transitRoutes={roadStore.transitRoutes}
+        transitRegions={roadStore.transitRegions}
         transitStations={roadStore.transitStations}
         selectedRoadId={roadStore.selectedRoadId}
         selectedTransitRouteId={roadStore.selectedTransitRouteId}
@@ -245,6 +261,7 @@ export default function App() {
         onCanvasPoint={roadStore.addDraftPoint}
         onFinishDraft={handleFinishDraft}
         onFinishTransitDraft={handleFinishTransitDraft}
+        onFinishTransitRegion={handleFinishTransitRegion}
         onAddTransitStation={handleAddTransitStation}
         onAdoptRoadDefaults={roadStore.adoptRoadDefaults}
         onSelectRoad={roadStore.selectRoad}

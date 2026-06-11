@@ -1,13 +1,15 @@
 import { Circle, Group, Line, Text } from "react-konva";
-import type { TransitRoute, TransitStation } from "../types/road";
+import type { TransitRegion, TransitRoute, TransitStation } from "../types/road";
 import { flattenPoints, getRoadRenderPoints } from "../utils/roadGeometry";
 
 type TransitLayerProps = {
   routes: TransitRoute[];
+  regions: TransitRegion[];
   stations: TransitStation[];
   selectedRouteId: string | null;
   selectedStationId: string | null;
   renderRoutes?: boolean;
+  renderRegions?: boolean;
   renderStations?: boolean;
   canSelect: boolean;
   onSelectRoute: (routeId: string | null) => void;
@@ -21,10 +23,12 @@ type TransitLayerProps = {
 
 export function TransitLayer({
   routes,
+  regions,
   stations,
   selectedRouteId,
   selectedStationId,
   renderRoutes = true,
+  renderRegions = true,
   renderStations = true,
   canSelect,
   onSelectRoute,
@@ -39,6 +43,22 @@ export function TransitLayer({
 
   return (
     <Group>
+      {renderRegions &&
+        regions.map((region) => (
+          <Line
+            key={region.id}
+            points={flattenPoints(region.points)}
+            closed
+            fill={region.color}
+            opacity={0.2}
+            stroke={region.color}
+            strokeWidth={3}
+            dash={[9, 7]}
+            lineJoin="round"
+            listening={false}
+          />
+        ))}
+
       {renderRoutes && routes.map((route) => {
         const points = flattenPoints(getRoadRenderPoints(route.points, route.geometryMode));
         const selected = route.id === selectedRouteId;

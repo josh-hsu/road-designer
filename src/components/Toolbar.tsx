@@ -148,9 +148,28 @@ function TransitToolIcon({
   kind,
   color,
 }: {
-  kind: "line" | "curve" | "transferStation" | "normalStation";
+  kind: "line" | "curve" | "region" | "transferStation" | "normalStation";
   color: string;
 }) {
+  if (kind === "region") {
+    return (
+      <svg viewBox="0 0 32 32" aria-hidden="true">
+        <rect
+          x="7"
+          y="7"
+          width="18"
+          height="18"
+          rx="2"
+          fill={color}
+          fillOpacity="0.2"
+          stroke={color}
+          strokeWidth="3"
+          strokeDasharray="4 3"
+        />
+      </svg>
+    );
+  }
+
   if (kind === "transferStation") {
     return (
       <svg viewBox="0 0 32 32" aria-hidden="true">
@@ -317,6 +336,15 @@ export function Toolbar({
           >
             <TransitToolIcon kind="curve" color={transitColor} />
             <span>Curve</span>
+          </button>
+          <button
+            className={`preset-button ${mode === "drawTransitRegion" ? "active" : ""}`}
+            title="Transit region"
+            aria-label="Draw transit region"
+            onClick={() => onModeChange("drawTransitRegion")}
+          >
+            <TransitToolIcon kind="region" color={transitColor} />
+            <span>Region</span>
           </button>
         </div>
         <div className="preset-grid transit-tool-grid">

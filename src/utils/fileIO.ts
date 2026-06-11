@@ -69,6 +69,18 @@ function validateProjectData(value: unknown): ProjectData {
     }
   });
 
+  (project.transitRegions ?? []).forEach((region, index) => {
+    if (
+      typeof region.id !== "string" ||
+      !Array.isArray(region.points) ||
+      region.points.length < 3 ||
+      region.points.length > 10 ||
+      typeof region.color !== "string"
+    ) {
+      throw new Error(`Invalid transit region at index ${index}.`);
+    }
+  });
+
   (project.transitStations ?? []).forEach((station, index) => {
     if (
       typeof station.id !== "string" ||
@@ -102,6 +114,10 @@ function validateProjectData(value: unknown): ProjectData {
       ...route,
       geometryMode: route.geometryMode ?? "polyline",
       color: route.color ?? "#22c55e",
+    })),
+    transitRegions: (project.transitRegions ?? []).map((region) => ({
+      ...region,
+      color: region.color ?? "#22c55e",
     })),
     transitStations: (project.transitStations ?? []).map((station) => ({
       ...station,

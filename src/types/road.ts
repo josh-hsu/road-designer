@@ -20,6 +20,12 @@ export type TransitRoute = {
   color: string;
 };
 
+export type TransitRegion = {
+  id: string;
+  points: Point[];
+  color: string;
+};
+
 export type TransitStationType = "transfer" | "normal";
 
 export type TransitStation = {
@@ -54,6 +60,7 @@ export type ProjectData = {
   version: 1;
   roads: Road[];
   transitRoutes?: TransitRoute[];
+  transitRegions?: TransitRegion[];
   transitStations?: TransitStation[];
 };
 
@@ -63,6 +70,7 @@ export type ToolMode =
   | "drawCurve"
   | "drawTransit"
   | "drawTransitCurve"
+  | "drawTransitRegion"
   | "blade"
   | "transferStation"
   | "normalStation";
