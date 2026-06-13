@@ -283,6 +283,8 @@ export default function App() {
         onRoadPointDragStart={roadStore.beginRoadPointDrag}
         onRoadPointDragMove={roadStore.previewRoadPointDrag}
         onRoadPointDragEnd={roadStore.endRoadPointDrag}
+        onRoadDragMove={roadStore.previewRoadDrag}
+        onRoadDragEnd={roadStore.endRoadDrag}
         onTransitRoutePointDragMove={roadStore.previewTransitRoutePointDrag}
         onTransitRoutePointDragEnd={roadStore.endTransitRoutePointDrag}
         onTransitRegionPointDragMove={roadStore.previewTransitRegionPointDrag}

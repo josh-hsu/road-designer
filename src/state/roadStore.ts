@@ -58,6 +58,8 @@ type RoadAction =
   | { type: "beginRoadPointDrag" }
   | { type: "previewRoadPointDrag"; roadId: string; pointIndex: number; point: Point }
   | { type: "endRoadPointDrag"; roadId: string; pointIndex: number; point: Point }
+  | { type: "previewRoadDrag"; roadId: string; delta: Point }
+  | { type: "endRoadDrag"; roadId: string; delta: Point }
   | { type: "deleteRoad"; roadId: string }
   | { type: "deleteTransitRoute"; routeId: string }
   | { type: "deleteTransitRegion"; regionId: string }
@@ -216,6 +218,21 @@ function updateRoadPointInRoads(roads: Road[], roadId: string, pointIndex: numbe
     if (road.id !== roadId) return road;
     const points = road.points.map((currentPoint, index) => (index === pointIndex ? point : currentPoint));
     return { ...road, points };
+  });
+}
+
+function moveRoadInRoads(roads: Road[], roadId: string, delta: Point): Road[] {
+  if (delta.x === 0 && delta.y === 0) return roads;
+
+  return roads.map((road) => {
+    if (road.id !== roadId) return road;
+    return {
+      ...road,
+      points: road.points.map((point) => ({
+        x: point.x + delta.x,
+        y: point.y + delta.y,
+      })),
+    };
   });
 }
 
@@ -500,6 +517,25 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
       };
     case "endRoadPointDrag": {
       const roads = updateRoadPointInRoads(state.roads, action.roadId, action.pointIndex, action.point);
+      if (!state.dragSnapshot) {
+        return applyRoadsWithHistory(state, roads);
+      }
+
+      return {
+        ...state,
+        roads,
+        dragSnapshot: null,
+        past: [...state.past, state.dragSnapshot],
+        future: [],
+      };
+    }
+    case "previewRoadDrag":
+      return {
+        ...state,
+        roads: moveRoadInRoads(state.roads, action.roadId, action.delta),
+      };
+    case "endRoadDrag": {
+      const roads = moveRoadInRoads(state.roads, action.roadId, action.delta);
       if (!state.dragSnapshot) {
         return applyRoadsWithHistory(state, roads);
       }
@@ -848,6 +884,14 @@ export function useRoadStore() {
       dispatch({ type: "endRoadPointDrag", roadId, pointIndex, point }),
     [],
   );
+  const previewRoadDrag = useCallback(
+    (roadId: string, delta: Point) => dispatch({ type: "previewRoadDrag", roadId, delta }),
+    [],
+  );
+  const endRoadDrag = useCallback(
+    (roadId: string, delta: Point) => dispatch({ type: "endRoadDrag", roadId, delta }),
+    [],
+  );
   const previewTransitRoutePointDrag = useCallback(
     (routeId: string, pointIndex: number, point: Point) =>
       dispatch({ type: "previewTransitRoutePointDrag", routeId, pointIndex, point }),
@@ -912,6 +956,8 @@ export function useRoadStore() {
     beginRoadPointDrag,
     previewRoadPointDrag,
     endRoadPointDrag,
+    previewRoadDrag,
+    endRoadDrag,
     previewTransitRoutePointDrag,
     endTransitRoutePointDrag,
     previewTransitRegionPointDrag,

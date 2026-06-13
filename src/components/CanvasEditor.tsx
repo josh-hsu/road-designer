@@ -49,6 +49,8 @@ type CanvasEditorProps = {
   onRoadPointDragStart: () => void;
   onRoadPointDragMove: (roadId: string, pointIndex: number, point: Point) => void;
   onRoadPointDragEnd: (roadId: string, pointIndex: number, point: Point) => void;
+  onRoadDragMove: (roadId: string, delta: Point) => void;
+  onRoadDragEnd: (roadId: string, delta: Point) => void;
   onTransitRoutePointDragMove: (routeId: string, pointIndex: number, point: Point) => void;
   onTransitRoutePointDragEnd: (routeId: string, pointIndex: number, point: Point) => void;
   onTransitRegionPointDragMove: (regionId: string, pointIndex: number, point: Point) => void;
@@ -215,6 +217,8 @@ export function CanvasEditor({
   onRoadPointDragStart,
   onRoadPointDragMove,
   onRoadPointDragEnd,
+  onRoadDragMove,
+  onRoadDragEnd,
   onTransitRoutePointDragMove,
   onTransitRoutePointDragEnd,
   onTransitRegionPointDragMove,
@@ -588,6 +592,9 @@ export function CanvasEditor({
                     onPointDragStart={onRoadPointDragStart}
                     onPointDragMove={onRoadPointDragMove}
                     onPointDragEnd={onRoadPointDragEnd}
+                    onRoadDragStart={onRoadPointDragStart}
+                    onRoadDragMove={onRoadDragMove}
+                    onRoadDragEnd={onRoadDragEnd}
                     onSnapPreviewChange={setSnapPreview}
                   />
                 ))}
@@ -603,6 +610,9 @@ export function CanvasEditor({
                     onPointDragStart={onRoadPointDragStart}
                     onPointDragMove={onRoadPointDragMove}
                     onPointDragEnd={onRoadPointDragEnd}
+                    onRoadDragStart={onRoadPointDragStart}
+                    onRoadDragMove={onRoadDragMove}
+                    onRoadDragEnd={onRoadDragEnd}
                     onSnapPreviewChange={setSnapPreview}
                   />
                 ))}
@@ -618,6 +628,9 @@ export function CanvasEditor({
                     onPointDragStart={onRoadPointDragStart}
                     onPointDragMove={onRoadPointDragMove}
                     onPointDragEnd={onRoadPointDragEnd}
+                    onRoadDragStart={onRoadPointDragStart}
+                    onRoadDragMove={onRoadDragMove}
+                    onRoadDragEnd={onRoadDragEnd}
                     onSnapPreviewChange={setSnapPreview}
                   />
                 ))}
@@ -705,6 +718,9 @@ export function CanvasEditor({
                     onPointDragStart={onRoadPointDragStart}
                     onPointDragMove={onRoadPointDragMove}
                     onPointDragEnd={onRoadPointDragEnd}
+                    onRoadDragStart={onRoadPointDragStart}
+                    onRoadDragMove={onRoadDragMove}
+                    onRoadDragEnd={onRoadDragEnd}
                     onSnapPreviewChange={setSnapPreview}
                   />
                 ))}
@@ -723,6 +739,9 @@ export function CanvasEditor({
               onPointDragStart={onRoadPointDragStart}
               onPointDragMove={onRoadPointDragMove}
               onPointDragEnd={onRoadPointDragEnd}
+              onRoadDragStart={onRoadPointDragStart}
+              onRoadDragMove={onRoadDragMove}
+              onRoadDragEnd={onRoadDragEnd}
               onSnapPreviewChange={setSnapPreview}
             />
           ))}
@@ -759,6 +778,9 @@ export function CanvasEditor({
               onPointDragStart={onRoadPointDragStart}
               onPointDragMove={onRoadPointDragMove}
               onPointDragEnd={onRoadPointDragEnd}
+              onRoadDragStart={onRoadPointDragStart}
+              onRoadDragMove={onRoadDragMove}
+              onRoadDragEnd={onRoadDragEnd}
               onSnapPreviewChange={setSnapPreview}
             />
           )}

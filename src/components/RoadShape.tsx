@@ -1,4 +1,6 @@
+import { useRef } from "react";
 import { Arrow, Circle, Group, Line } from "react-konva";
+import type Konva from "konva";
 import type { Point, Road } from "../types/road";
 import { getRoadStyle } from "../utils/roadStyle";
 import { flattenPoints, getRoadRenderPoints } from "../utils/roadGeometry";
@@ -23,6 +25,9 @@ type RoadShapeProps = {
   onPointDragStart: () => void;
   onPointDragMove: (roadId: string, pointIndex: number, point: Point) => void;
   onPointDragEnd: (roadId: string, pointIndex: number, point: Point) => void;
+  onRoadDragStart: () => void;
+  onRoadDragMove: (roadId: string, delta: Point) => void;
+  onRoadDragEnd: (roadId: string, delta: Point) => void;
   onSnapPreviewChange: (target: SnapTarget | null) => void;
 };
 
@@ -37,6 +42,9 @@ export function RoadShape({
   onPointDragStart,
   onPointDragMove,
   onPointDragEnd,
+  onRoadDragStart,
+  onRoadDragMove,
+  onRoadDragEnd,
   onSnapPreviewChange,
 }: RoadShapeProps) {
   const style = getRoadStyle(road);
@@ -49,8 +57,23 @@ export function RoadShape({
   const dividerLayers = getDividerLayers(road, renderPoints, markingMasks);
   const arrowLayers = getOneWayArrowLayers(road, renderPoints, markingMasks);
   const selectableRoadId = "sourceRoadId" in road ? road.sourceRoadId : road.id;
+  const lastRoadDragPointerRef = useRef<Point | null>(null);
   const selectRoad = () => {
     if (canSelect) onSelect(selectableRoadId);
+  };
+  const applyRoadDragDelta = (event: Konva.KonvaEventObject<DragEvent>): Point => {
+    const pointer = event.target.getStage()?.getPointerPosition();
+    const lastPointer = lastRoadDragPointerRef.current;
+    event.target.position({ x: 0, y: 0 });
+
+    if (!pointer || !lastPointer) return { x: 0, y: 0 };
+
+    lastRoadDragPointerRef.current = pointer;
+    const scale = event.target.getLayer()?.scaleX() ?? 1;
+    return {
+      x: Math.round((pointer.x - lastPointer.x) / scale),
+      y: Math.round((pointer.y - lastPointer.y) / scale),
+    };
   };
   const phaseLayers =
     renderPhase === "selected"
@@ -127,8 +150,26 @@ export function RoadShape({
           strokeWidth={road.width}
           lineCap="round"
           lineJoin="round"
+          draggable={canSelect}
           onClick={selectRoad}
           onTap={selectRoad}
+          onDragStart={(event) => {
+            if (!canSelect) return;
+            onSelect(selectableRoadId);
+            onRoadDragStart();
+            lastRoadDragPointerRef.current = event.target.getStage()?.getPointerPosition() ?? null;
+          }}
+          onDragMove={(event) => {
+            if (!canSelect) return;
+            const delta = applyRoadDragDelta(event);
+            onRoadDragMove(selectableRoadId, delta);
+          }}
+          onDragEnd={(event) => {
+            if (!canSelect) return;
+            const delta = applyRoadDragDelta(event);
+            onRoadDragEnd(selectableRoadId, delta);
+            lastRoadDragPointerRef.current = null;
+          }}
           hitStrokeWidth={Math.max(road.width + 14, 28)}
         />
       )}
