@@ -335,6 +335,16 @@ export function CanvasEditor({
     };
   };
 
+  const startPanning = (event: Konva.KonvaEventObject<MouseEvent>, screenPoint: Point) => {
+    event.evt.preventDefault();
+    setIsPanning(true);
+    lastPanPointRef.current = screenPoint;
+  };
+
+  const isBlankCanvasTarget = (event: Konva.KonvaEventObject<MouseEvent>): boolean => {
+    return event.target === event.target.getStage() || event.target.name() === "canvas-background";
+  };
+
   const isNearRegionStart = (point: Point): boolean => {
     const startPoint = draftPoints[0];
     return Boolean(startPoint && draftPoints.length >= 3 && distanceBetween(point, startPoint) <= 12);
@@ -400,9 +410,7 @@ export function CanvasEditor({
     const screenPoint = getScreenPoint(stage);
 
     if (spacePressed || event.evt.button === 1) {
-      event.evt.preventDefault();
-      setIsPanning(true);
-      lastPanPointRef.current = screenPoint;
+      startPanning(event, screenPoint);
       return;
     }
 
@@ -462,11 +470,12 @@ export function CanvasEditor({
       return;
     }
 
-    if (event.target === stage || event.target.name() === "canvas-background") {
+    if (mode === "select" && isBlankCanvasTarget(event)) {
       onSelectRoad(null);
       onSelectTransitRoute(null);
       onSelectTransitRegion(null);
       onSelectTransitStation(null);
+      startPanning(event, screenPoint);
     }
   };
 
