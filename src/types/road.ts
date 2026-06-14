@@ -3,7 +3,7 @@ export type Point = {
   y: number;
 };
 
-export type RoadType = "local" | "arterial" | "tunnel";
+export type RoadType = "motorway" | "primary" | "secondary" | "tertiary" | "residential";
 
 export type RoadGeometryMode = "polyline" | "bezier";
 
@@ -44,6 +44,7 @@ export type Road = {
   width: number;
   lanes: number;
   divider: boolean;
+  isTunnel?: boolean;
   zLevel: number;
   geometryMode?: RoadGeometryMode;
   kind?: RoadKind;
@@ -82,6 +83,7 @@ export type RoadDefaults = Pick<
   | "width"
   | "lanes"
   | "divider"
+  | "isTunnel"
   | "zLevel"
   | "kind"
   | "startZLevel"

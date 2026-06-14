@@ -14,7 +14,7 @@ import type {
 import type { BladeHit } from "../utils/blade";
 import { splitPathAtHit } from "../utils/blade";
 import { getProjectNameFromFileName } from "../utils/fileName";
-import { DEFAULT_ROAD_BY_TYPE, getDefaultsForRoadType } from "../utils/roadStyle";
+import { DEFAULT_ROAD_BY_TYPE, getDefaultsForRoadType, getRoadPresetWidth } from "../utils/roadStyle";
 
 type RoadState = {
   roads: Road[];
@@ -70,6 +70,7 @@ type RoadAction =
   | { type: "splitRoad"; roadId: string; hit: BladeHit }
   | { type: "splitTransitRoute"; routeId: string; hit: BladeHit }
   | { type: "setDrawType"; roadType: RoadType }
+  | { type: "setDrawTunnel"; isTunnel: boolean }
   | { type: "setDrawPreset"; defaults: RoadDefaults }
   | { type: "setTransitColor"; color: string }
   | { type: "addTransitColor"; color: string }
@@ -88,7 +89,7 @@ const initialState: RoadState = {
   selectedTransitRegionId: null,
   selectedTransitStationId: null,
   draftPoints: [],
-  drawDefaults: getDefaultsForRoadType("local"),
+  drawDefaults: getDefaultsForRoadType("residential"),
   transitColor: "#22c55e",
   transitPalette: ["#22c55e", "#2563eb", "#ef4444", "#f97316", "#a855f7"],
   sourceFileName: undefined,
@@ -101,11 +102,22 @@ const initialState: RoadState = {
 
 function normalizeRoad(road: Road): Road {
   const kind = road.kind ?? "standard";
+  const legacyRoadType = road.roadType as RoadType | "local" | "arterial" | "tunnel";
+  const roadType: RoadType =
+    legacyRoadType === "local"
+      ? "residential"
+      : legacyRoadType === "arterial"
+        ? "primary"
+        : legacyRoadType === "tunnel"
+          ? "residential"
+          : legacyRoadType;
 
   return {
     ...road,
+    roadType,
     geometryMode: road.geometryMode ?? "polyline",
     kind,
+    isTunnel: road.isTunnel ?? legacyRoadType === "tunnel",
     startZLevel: road.startZLevel ?? road.zLevel,
     endZLevel: road.endZLevel ?? road.zLevel,
     oneWay: road.oneWay ?? false,
@@ -667,10 +679,20 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
         drawDefaults: {
           ...state.drawDefaults,
           roadType: action.roadType,
+          width: getRoadPresetWidth(action.roadType, state.drawDefaults.lanes),
           name: DEFAULT_ROAD_BY_TYPE[action.roadType].name,
           routeClass: DEFAULT_ROAD_BY_TYPE[action.roadType].routeClass,
           routeNumber: DEFAULT_ROAD_BY_TYPE[action.roadType].routeNumber,
           showLabel: DEFAULT_ROAD_BY_TYPE[action.roadType].showLabel,
+        },
+        draftDefaults: null,
+      };
+    case "setDrawTunnel":
+      return {
+        ...state,
+        drawDefaults: {
+          ...state.drawDefaults,
+          isTunnel: action.isTunnel,
         },
         draftDefaults: null,
       };
@@ -705,6 +727,7 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
           width: sourceRoad.width,
           lanes: sourceRoad.lanes,
           divider: sourceRoad.divider,
+          isTunnel: sourceRoad.isTunnel ?? false,
           zLevel: sourceRoad.zLevel,
           kind: sourceRoad.kind ?? "standard",
           startZLevel: sourceRoad.startZLevel ?? sourceRoad.zLevel,
@@ -838,6 +861,10 @@ export function useRoadStore() {
     [],
   );
   const setDrawType = useCallback((roadType: RoadType) => dispatch({ type: "setDrawType", roadType }), []);
+  const setDrawTunnel = useCallback(
+    (isTunnel: boolean) => dispatch({ type: "setDrawTunnel", isTunnel }),
+    [],
+  );
   const setDrawPreset = useCallback(
     (defaults: RoadDefaults) => dispatch({ type: "setDrawPreset", defaults }),
     [],
@@ -948,6 +975,7 @@ export function useRoadStore() {
     selectTransitRegion,
     selectTransitStation,
     setDrawType,
+    setDrawTunnel,
     setDrawPreset,
     adoptRoadDefaults,
     loadProject,

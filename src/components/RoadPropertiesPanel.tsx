@@ -128,10 +128,21 @@ export function RoadPropertiesPanel({
           value={road.roadType}
           onChange={(event) => onUpdateRoad(road.id, { roadType: event.target.value as RoadType })}
         >
-          <option value="local">{ROAD_TYPE_LABELS.local}</option>
-          <option value="arterial">{ROAD_TYPE_LABELS.arterial}</option>
-          <option value="tunnel">{ROAD_TYPE_LABELS.tunnel}</option>
+          <option value="motorway">{ROAD_TYPE_LABELS.motorway}</option>
+          <option value="primary">{ROAD_TYPE_LABELS.primary}</option>
+          <option value="secondary">{ROAD_TYPE_LABELS.secondary}</option>
+          <option value="tertiary">{ROAD_TYPE_LABELS.tertiary}</option>
+          <option value="residential">{ROAD_TYPE_LABELS.residential}</option>
         </select>
+      </label>
+
+      <label className="checkbox-field">
+        <input
+          type="checkbox"
+          checked={road.isTunnel ?? false}
+          onChange={(event) => onUpdateRoad(road.id, { isTunnel: event.target.checked })}
+        />
+        <span>Tunnel</span>
       </label>
 
       <label className="field">
@@ -184,7 +195,7 @@ export function RoadPropertiesPanel({
 
       <label className="field">
         <span>Width</span>
-        <input min={6} max={80} type="number" value={road.width} onChange={updateNumber("width")} />
+        <input min={4} max={80} type="number" value={road.width} onChange={updateNumber("width")} />
       </label>
 
       <label className="field">

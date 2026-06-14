@@ -13,108 +13,154 @@ type RoadVisualStyle = {
   outerDash?: number[];
 };
 
-const ROAD_STYLES: Record<RoadType, RoadVisualStyle> = {
-  local: {
-    body: "#7b8490",
-    outer: "#3d4652",
-    laneMarking: "#edf2f7",
-    laneMarkingWidth: 1.5,
-    divider: "#ffd166",
-    dividerWidth: 3,
-    selected: "#2f80ed",
-    selectedHaloPadding: 10,
-    outerPadding: 5,
-  },
-  arterial: {
-    body: "#535c66",
-    outer: "#20262d",
-    laneMarking: "#f8fafc",
-    laneMarkingWidth: 1.7,
-    divider: "#ffd166",
+const ROAD_BODY_COLORS: Record<RoadType, string> = {
+  motorway: "rgb(231, 132, 152)",
+  primary: "rgb(255, 209, 154)",
+  secondary: "rgb(248, 251, 183)",
+  tertiary: "rgb(255, 255, 255)",
+  residential: "rgb(255, 255, 255)",
+};
+
+const TUNNEL_BODY_COLORS: Record<RoadType, string> = {
+  motorway: "rgb(240, 178, 191)",
+  primary: "rgb(255, 233, 207)",
+  secondary: "rgb(251, 253, 209)",
+  tertiary: "rgb(240, 240, 240)",
+  residential: "rgb(240, 240, 240)",
+};
+
+const ROAD_OUTER_COLORS: Record<RoadType, string> = {
+  motorway: "rgb(188, 83, 108)",
+  primary: "rgb(220, 155, 87)",
+  secondary: "rgb(204, 207, 132)",
+  tertiary: "rgb(184, 190, 199)",
+  residential: "rgb(198, 204, 213)",
+};
+
+const ROAD_SELECTED_COLORS: Record<RoadType, string> = {
+  motorway: "#dc2626",
+  primary: "#f97316",
+  secondary: "#ca8a04",
+  tertiary: "#2563eb",
+  residential: "#2563eb",
+};
+
+const ROAD_STYLE_BASE: Record<RoadType, Omit<RoadVisualStyle, "body" | "outerDash">> = {
+  motorway: {
+    outer: ROAD_OUTER_COLORS.motorway,
+    laneMarking: "#ffffff",
+    laneMarkingWidth: 1.8,
+    divider: "#8b1e38",
     dividerWidth: 4,
-    selected: "#f97316",
+    selected: ROAD_SELECTED_COLORS.motorway,
     selectedHaloPadding: 12,
     outerPadding: 7,
   },
-  tunnel: {
-    body: "#aeb7c2",
-    outer: "#3d4652",
-    laneMarking: "#f8fafc",
-    laneMarkingWidth: 1.5,
-    divider: "#ffd166",
+  primary: {
+    outer: ROAD_OUTER_COLORS.primary,
+    laneMarking: "#ffffff",
+    laneMarkingWidth: 1.7,
+    divider: "#b45309",
+    dividerWidth: 4,
+    selected: ROAD_SELECTED_COLORS.primary,
+    selectedHaloPadding: 12,
+    outerPadding: 7,
+  },
+  secondary: {
+    outer: ROAD_OUTER_COLORS.secondary,
+    laneMarking: "#9ca3af",
+    laneMarkingWidth: 1.6,
+    divider: "#ca8a04",
     dividerWidth: 3,
-    selected: "#8b5cf6",
+    selected: ROAD_SELECTED_COLORS.secondary,
+    selectedHaloPadding: 10,
+    outerPadding: 6,
+  },
+  tertiary: {
+    outer: ROAD_OUTER_COLORS.tertiary,
+    laneMarking: "#9ca3af",
+    laneMarkingWidth: 1.5,
+    divider: "#9ca3af",
+    dividerWidth: 3,
+    selected: ROAD_SELECTED_COLORS.tertiary,
     selectedHaloPadding: 10,
     outerPadding: 5,
-    outerDash: [22, 24],
+  },
+  residential: {
+    outer: ROAD_OUTER_COLORS.residential,
+    laneMarking: "#9ca3af",
+    laneMarkingWidth: 1.4,
+    divider: "#9ca3af",
+    dividerWidth: 3,
+    selected: ROAD_SELECTED_COLORS.residential,
+    selectedHaloPadding: 10,
+    outerPadding: 5,
   },
 };
 
 export const ROAD_TYPE_LABELS: Record<RoadType, string> = {
-  local: "Local road",
-  arterial: "Arterial road",
-  tunnel: "Tunnel",
+  motorway: "Motorway",
+  primary: "Level 1 Primary road",
+  secondary: "Level 2 Secondary road",
+  tertiary: "Level 3 Tertiary road",
+  residential: "Residential road",
 };
 
 export const ROAD_TYPE_PRIORITY: Record<RoadType, number> = {
-  local: 1,
-  tunnel: 1,
-  arterial: 2,
+  residential: 1,
+  tertiary: 2,
+  secondary: 3,
+  primary: 4,
+  motorway: 5,
 };
+
+const WIDTHS_BY_ROAD_TYPE: Record<RoadType, Record<number, number>> = {
+  motorway: { 1: 4, 2: 7, 4: 17, 6: 22 },
+  primary: { 1: 4, 2: 7, 4: 17, 6: 22 },
+  secondary: { 1: 4, 2: 7, 4: 17, 6: 22 },
+  tertiary: { 1: 4, 2: 7, 4: 17, 6: 22 },
+  residential: { 1: 4, 2: 6, 4: 15, 6: 20 },
+};
+
+export function getRoadPresetWidth(roadType: RoadType, lanes: number): number {
+  return WIDTHS_BY_ROAD_TYPE[roadType][lanes] ?? WIDTHS_BY_ROAD_TYPE[roadType][2];
+}
+
+function createDefaults(roadType: RoadType): RoadDefaults {
+  return {
+    roadType,
+    width: getRoadPresetWidth(roadType, 2),
+    lanes: 2,
+    divider: false,
+    isTunnel: false,
+    zLevel: 0,
+    kind: "standard",
+    startZLevel: 0,
+    endZLevel: 0,
+    oneWay: false,
+    oneWayDirection: "forward",
+    name: "",
+    routeClass: "none",
+    routeNumber: "",
+    showLabel: true,
+  };
+}
 
 export const DEFAULT_ROAD_BY_TYPE: Record<RoadType, RoadDefaults> = {
-  local: {
-    roadType: "local",
-    width: 18,
-    lanes: 2,
-    divider: false,
-    zLevel: 0,
-    kind: "standard",
-    startZLevel: 0,
-    endZLevel: 0,
-    oneWay: false,
-    oneWayDirection: "forward",
-    name: "",
-    routeClass: "none",
-    routeNumber: "",
-    showLabel: true,
-  },
-  arterial: {
-    roadType: "arterial",
-    width: 32,
-    lanes: 4,
-    divider: true,
-    zLevel: 0,
-    kind: "standard",
-    startZLevel: 0,
-    endZLevel: 0,
-    oneWay: false,
-    oneWayDirection: "forward",
-    name: "",
-    routeClass: "none",
-    routeNumber: "",
-    showLabel: true,
-  },
-  tunnel: {
-    roadType: "tunnel",
-    width: 18,
-    lanes: 2,
-    divider: false,
-    zLevel: 0,
-    kind: "standard",
-    startZLevel: 0,
-    endZLevel: 0,
-    oneWay: false,
-    oneWayDirection: "forward",
-    name: "",
-    routeClass: "none",
-    routeNumber: "",
-    showLabel: true,
-  },
+  motorway: createDefaults("motorway"),
+  primary: createDefaults("primary"),
+  secondary: createDefaults("secondary"),
+  tertiary: createDefaults("tertiary"),
+  residential: createDefaults("residential"),
 };
 
-export function getRoadStyle(road: Pick<Road, "roadType">): RoadVisualStyle {
-  return ROAD_STYLES[road.roadType];
+export function getRoadStyle(road: Pick<Road, "roadType" | "isTunnel">): RoadVisualStyle {
+  const baseStyle = ROAD_STYLE_BASE[road.roadType];
+  return {
+    ...baseStyle,
+    body: road.isTunnel ? TUNNEL_BODY_COLORS[road.roadType] : ROAD_BODY_COLORS[road.roadType],
+    outerDash: road.isTunnel ? [22, 24] : undefined,
+  };
 }
 
 export function getDefaultsForRoadType(roadType: RoadType): RoadDefaults {

@@ -12,6 +12,19 @@ export type ImportedProject = {
   fileName: string;
 };
 
+function isValidRoadType(value: unknown): boolean {
+  return (
+    value === "motorway" ||
+    value === "primary" ||
+    value === "secondary" ||
+    value === "tertiary" ||
+    value === "residential" ||
+    value === "local" ||
+    value === "arterial" ||
+    value === "tunnel"
+  );
+}
+
 function isValidRouteClass(value: unknown): boolean {
   return (
     value === undefined ||
@@ -44,10 +57,11 @@ function validateProjectData(value: unknown): ProjectData {
     if (
       typeof road.id !== "string" ||
       !Array.isArray(road.points) ||
-      (road.roadType !== "local" && road.roadType !== "arterial" && road.roadType !== "tunnel") ||
+      !isValidRoadType(road.roadType) ||
       typeof road.width !== "number" ||
       typeof road.lanes !== "number" ||
       typeof road.divider !== "boolean" ||
+      (road.isTunnel !== undefined && typeof road.isTunnel !== "boolean") ||
       typeof road.zLevel !== "number" ||
       (road.geometryMode !== undefined && road.geometryMode !== "polyline" && road.geometryMode !== "bezier") ||
       !isValidRoadKind(road.kind) ||

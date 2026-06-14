@@ -5,6 +5,7 @@ import type { Point, Road, RoadGeometryMode, ToolMode, TransitRegion, TransitRou
 import { GridLayer } from "./GridLayer";
 import { RoadLabelLayer } from "./RoadLabelLayer";
 import { RoadShape } from "./RoadShape";
+import { ScaleBar } from "./ScaleBar";
 import { StatusBar } from "./StatusBar";
 import { TransitLayer } from "./TransitLayer";
 import { useViewportStore } from "../state/viewportStore";
@@ -902,6 +903,7 @@ export function CanvasEditor({
         projectName={projectName}
         sourceFileName={sourceFileName}
       />
+      <ScaleBar zoom={viewport.scale} />
     </main>
   );
 }

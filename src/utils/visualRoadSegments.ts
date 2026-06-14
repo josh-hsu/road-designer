@@ -11,6 +11,7 @@ export type VisualRoadSegment = {
   width: number;
   lanes: number;
   divider: boolean;
+  isTunnel?: boolean;
   oneWay?: boolean;
   oneWayDirection?: OneWayDirection;
   zLevel: number;
@@ -85,6 +86,7 @@ function createStandardSegment(road: Road): VisualRoadSegment {
     width: road.width,
     lanes: road.lanes,
     divider: road.divider,
+    isTunnel: road.isTunnel,
     oneWay: road.oneWay,
     oneWayDirection: road.oneWayDirection,
     zLevel: road.zLevel,
@@ -104,6 +106,7 @@ function createConnectorSegment(road: Road, connectorPart: "start" | "end", poin
     width: road.width,
     lanes: road.lanes,
     divider: road.divider,
+    isTunnel: road.isTunnel,
     oneWay: road.oneWay,
     oneWayDirection: road.oneWayDirection,
     zLevel: connectorPart === "start" ? road.startZLevel ?? road.zLevel : road.endZLevel ?? road.zLevel,

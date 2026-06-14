@@ -18,7 +18,7 @@ export type RoadMarkingMask = {
   shape?: "circle" | "square";
 };
 
-type RenderableRoad = Pick<Road, "id" | "roadType" | "width" | "lanes" | "divider"> & {
+type RenderableRoad = Pick<Road, "id" | "roadType" | "width" | "lanes" | "divider" | "isTunnel"> & {
   sourceRoadId?: string;
   sourceKind?: "standard" | "connector";
   oneWay?: boolean;

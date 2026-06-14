@@ -218,6 +218,7 @@ export default function App() {
         transitPalette={roadStore.transitPalette}
         onModeChange={handleModeChange}
         onDrawRoadTypeChange={roadStore.setDrawType}
+        onDrawTunnelChange={roadStore.setDrawTunnel}
         onDrawPresetSelect={(toolMode, preset) => {
           const sameActivePreset =
             mode === toolMode &&

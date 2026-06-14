@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { RoadDefaults, RoadType, ToolMode } from "../types/road";
-import { ROAD_TYPE_LABELS } from "../utils/roadStyle";
+import { getRoadPresetWidth, getRoadStyle, ROAD_TYPE_LABELS } from "../utils/roadStyle";
 
-type RoadPreset = Pick<RoadDefaults, "width" | "lanes" | "divider"> & {
+type RoadPreset = Pick<RoadDefaults, "lanes" | "divider"> & {
   id: string;
   label: string;
 };
@@ -11,28 +11,24 @@ const ROAD_PRESETS: RoadPreset[] = [
   {
     id: "small",
     label: "1 lane",
-    width: 9,
     lanes: 1,
     divider: false,
   },
   {
     id: "normal",
     label: "2 lanes",
-    width: 18,
     lanes: 2,
     divider: false,
   },
   {
     id: "big",
     label: "4 lanes",
-    width: 27,
     lanes: 4,
     divider: true,
   },
   {
     id: "huge",
     label: "6 lanes",
-    width: 36,
     lanes: 6,
     divider: true,
   },
@@ -48,6 +44,7 @@ type ToolbarProps = {
   transitPalette: string[];
   onModeChange: (mode: ToolMode) => void;
   onDrawRoadTypeChange: (roadType: RoadType) => void;
+  onDrawTunnelChange: (isTunnel: boolean) => void;
   onDrawPresetSelect: (
     mode: Extract<ToolMode, "draw" | "drawCurve">,
     preset: Pick<RoadDefaults, "width" | "lanes" | "divider">,
@@ -61,16 +58,19 @@ type ToolbarProps = {
   onImportClick: () => void;
 };
 
-function getPresetDefaults(preset: RoadPreset): Pick<RoadDefaults, "width" | "lanes" | "divider"> {
+function getPresetDefaults(
+  preset: RoadPreset,
+  roadType: RoadType,
+): Pick<RoadDefaults, "width" | "lanes" | "divider"> {
   return {
-    width: preset.width,
+    width: getRoadPresetWidth(roadType, preset.lanes),
     lanes: preset.lanes,
     divider: preset.divider,
   };
 }
 
 function presetMatches(a: RoadDefaults, b: RoadPreset): boolean {
-  return a.width === b.width && a.lanes === b.lanes && a.divider === b.divider;
+  return a.lanes === b.lanes && a.divider === b.divider;
 }
 
 function PointerIcon() {
@@ -93,11 +93,20 @@ function BladeIcon() {
   );
 }
 
-function RoadPresetIcon({ preset, curved, roadType }: { preset: RoadPreset; curved: boolean; roadType: RoadType }) {
-  const roadStroke = roadType === "arterial" ? "#535c66" : roadType === "tunnel" ? "#aeb7c2" : "#7b8490";
-  const edgeStroke = roadType === "arterial" ? "#20262d" : "#3d4652";
-  const edgeDash = roadType === "tunnel" ? "5 4" : undefined;
-  const visualWidth = Math.max(7, Math.min(22, preset.width * 0.62));
+function RoadPresetIcon({
+  preset,
+  curved,
+  roadType,
+  isTunnel,
+}: {
+  preset: RoadPreset;
+  curved: boolean;
+  roadType: RoadType;
+  isTunnel: boolean;
+}) {
+  const style = getRoadStyle({ roadType, isTunnel });
+  const presetWidth = getRoadPresetWidth(roadType, preset.lanes);
+  const visualWidth = Math.max(7, Math.min(22, presetWidth * 0.62));
   const laneOffsets = Array.from({ length: Math.max(0, preset.lanes - 1) }, (_, index) => {
     return 16 - visualWidth / 2 + (visualWidth / preset.lanes) * (index + 1);
   });
@@ -108,12 +117,12 @@ function RoadPresetIcon({ preset, curved, roadType }: { preset: RoadPreset; curv
       <path
         d={path}
         fill="none"
-        stroke={edgeStroke}
+        stroke={style.outer}
         strokeWidth={visualWidth + 3}
         strokeLinecap="round"
-        strokeDasharray={edgeDash}
+        strokeDasharray={style.outerDash?.join(" ")}
       />
-      <path d={path} fill="none" stroke={roadStroke} strokeWidth={visualWidth} strokeLinecap="round" />
+      <path d={path} fill="none" stroke={style.body} strokeWidth={visualWidth} strokeLinecap="round" />
       {laneOffsets.map((offset) => {
         if (preset.divider && Math.abs(offset - 16) < 1.5) return null;
         const markingPath = curved
@@ -209,6 +218,7 @@ export function Toolbar({
   transitPalette,
   onModeChange,
   onDrawRoadTypeChange,
+  onDrawTunnelChange,
   onDrawPresetSelect,
   onShowGridChange,
   onKeepDrawingChange,
@@ -248,10 +258,21 @@ export function Toolbar({
       <label className="field">
         <span>Road type</span>
         <select value={drawDefaults.roadType} onChange={(event) => onDrawRoadTypeChange(event.target.value as RoadType)}>
-          <option value="local">{ROAD_TYPE_LABELS.local}</option>
-          <option value="arterial">{ROAD_TYPE_LABELS.arterial}</option>
-          <option value="tunnel">{ROAD_TYPE_LABELS.tunnel}</option>
+          <option value="motorway">{ROAD_TYPE_LABELS.motorway}</option>
+          <option value="primary">{ROAD_TYPE_LABELS.primary}</option>
+          <option value="secondary">{ROAD_TYPE_LABELS.secondary}</option>
+          <option value="tertiary">{ROAD_TYPE_LABELS.tertiary}</option>
+          <option value="residential">{ROAD_TYPE_LABELS.residential}</option>
         </select>
+      </label>
+
+      <label className="checkbox-field">
+        <input
+          type="checkbox"
+          checked={drawDefaults.isTunnel ?? false}
+          onChange={(event) => onDrawTunnelChange(event.target.checked)}
+        />
+        <span>Tunnel</span>
       </label>
 
       <div className="tool-section">
@@ -261,11 +282,16 @@ export function Toolbar({
             <button
               key={`straight-${preset.id}`}
               className={`preset-button ${mode === "draw" && presetMatches(drawDefaults, preset) ? "active" : ""}`}
-              title={`${preset.label}: ${preset.width}px${preset.divider ? ", divider" : ""}`}
+              title={`${preset.label}: ${getRoadPresetWidth(drawDefaults.roadType, preset.lanes)}px${preset.divider ? ", divider" : ""}`}
               aria-label={`Draw ${preset.label} road`}
-              onClick={() => onDrawPresetSelect("draw", getPresetDefaults(preset))}
+              onClick={() => onDrawPresetSelect("draw", getPresetDefaults(preset, drawDefaults.roadType))}
             >
-              <RoadPresetIcon preset={preset} curved={false} roadType={drawDefaults.roadType} />
+              <RoadPresetIcon
+                preset={preset}
+                curved={false}
+                roadType={drawDefaults.roadType}
+                isTunnel={drawDefaults.isTunnel ?? false}
+              />
               <span>{preset.label}</span>
             </button>
           ))}
@@ -279,11 +305,16 @@ export function Toolbar({
             <button
               key={`curve-${preset.id}`}
               className={`preset-button ${mode === "drawCurve" && presetMatches(drawDefaults, preset) ? "active" : ""}`}
-              title={`Curved ${preset.label}: ${preset.width}px${preset.divider ? ", divider" : ""}`}
+              title={`Curved ${preset.label}: ${getRoadPresetWidth(drawDefaults.roadType, preset.lanes)}px${preset.divider ? ", divider" : ""}`}
               aria-label={`Draw curved ${preset.label} road`}
-              onClick={() => onDrawPresetSelect("drawCurve", getPresetDefaults(preset))}
+              onClick={() => onDrawPresetSelect("drawCurve", getPresetDefaults(preset, drawDefaults.roadType))}
             >
-              <RoadPresetIcon preset={preset} curved roadType={drawDefaults.roadType} />
+              <RoadPresetIcon
+                preset={preset}
+                curved
+                roadType={drawDefaults.roadType}
+                isTunnel={drawDefaults.isTunnel ?? false}
+              />
               <span>{preset.label}</span>
             </button>
           ))}
