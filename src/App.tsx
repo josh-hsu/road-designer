@@ -176,9 +176,9 @@ export default function App() {
 
   const handleImportClick = async () => {
     try {
-      const project = await importProjectDataWithDialog();
-      if (project) {
-        roadStore.loadProject(project);
+      const imported = await importProjectDataWithDialog();
+      if (imported) {
+        roadStore.loadProject(imported.project, imported.fileName);
         return;
       }
       browserImportRef.current?.click();
@@ -189,7 +189,7 @@ export default function App() {
 
   const handleBrowserImport = async (file: File) => {
     try {
-      roadStore.loadProject(await importProjectDataFromFile(file));
+      roadStore.loadProject(await importProjectDataFromFile(file), file.name);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Import failed.");
     }
@@ -197,7 +197,10 @@ export default function App() {
 
   const handleExport = async () => {
     try {
-      await exportProjectData(roadStore.projectData);
+      await exportProjectData(roadStore.projectData, {
+        sourceFileName: roadStore.sourceFileName,
+        projectName: roadStore.projectName,
+      });
     } catch (error) {
       alert(error instanceof Error ? error.message : "Export failed.");
     }
@@ -266,6 +269,8 @@ export default function App() {
         selectedTransitStationId={roadStore.selectedTransitStationId}
         draftPoints={roadStore.draftPoints}
         transitColor={roadStore.transitColor}
+        projectName={roadStore.projectName}
+        sourceFileName={roadStore.sourceFileName}
         showGrid={showGrid}
         showDebugMasks={showDebugMasks}
         onCanvasPoint={roadStore.addDraftPoint}

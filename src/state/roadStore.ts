@@ -13,6 +13,7 @@ import type {
 } from "../types/road";
 import type { BladeHit } from "../utils/blade";
 import { splitPathAtHit } from "../utils/blade";
+import { getProjectNameFromFileName } from "../utils/fileName";
 import { DEFAULT_ROAD_BY_TYPE, getDefaultsForRoadType } from "../utils/roadStyle";
 
 type RoadState = {
@@ -28,6 +29,8 @@ type RoadState = {
   drawDefaults: RoadDefaults;
   transitColor: string;
   transitPalette: string[];
+  sourceFileName?: string;
+  projectName: string;
   draftDefaults: RoadDefaults | null;
   dragSnapshot: ProjectData | null;
   past: ProjectData[];
@@ -71,7 +74,7 @@ type RoadAction =
   | { type: "setTransitColor"; color: string }
   | { type: "addTransitColor"; color: string }
   | { type: "adoptRoadDefaults"; roadId: string }
-  | { type: "loadProject"; project: ProjectData }
+  | { type: "loadProject"; project: ProjectData; sourceFileName?: string }
   | { type: "undo" }
   | { type: "redo" };
 
@@ -88,6 +91,8 @@ const initialState: RoadState = {
   drawDefaults: getDefaultsForRoadType("local"),
   transitColor: "#22c55e",
   transitPalette: ["#22c55e", "#2563eb", "#ef4444", "#f97316", "#a855f7"],
+  sourceFileName: undefined,
+  projectName: "road-designer",
   draftDefaults: null,
   dragSnapshot: null,
   past: [],
@@ -717,6 +722,8 @@ function roadReducer(state: RoadState, action: RoadAction): RoadState {
       return applyProjectWithHistory(
         {
           ...state,
+          sourceFileName: action.sourceFileName ?? state.sourceFileName,
+          projectName: action.sourceFileName ? getProjectNameFromFileName(action.sourceFileName) : state.projectName,
           draftPoints: [],
           draftDefaults: null,
         },
@@ -836,7 +843,10 @@ export function useRoadStore() {
     [],
   );
   const adoptRoadDefaults = useCallback((roadId: string) => dispatch({ type: "adoptRoadDefaults", roadId }), []);
-  const loadProject = useCallback((project: ProjectData) => dispatch({ type: "loadProject", project }), []);
+  const loadProject = useCallback(
+    (project: ProjectData, sourceFileName?: string) => dispatch({ type: "loadProject", project, sourceFileName }),
+    [],
+  );
   const deleteRoad = useCallback((roadId: string) => dispatch({ type: "deleteRoad", roadId }), []);
   const deleteTransitRoute = useCallback((routeId: string) => dispatch({ type: "deleteTransitRoute", routeId }), []);
   const deleteTransitRegion = useCallback(

@@ -32,6 +32,8 @@ type CanvasEditorProps = {
   selectedTransitStationId: string | null;
   draftPoints: Point[];
   transitColor: string;
+  projectName?: string;
+  sourceFileName?: string;
   showGrid: boolean;
   showDebugMasks: boolean;
   onCanvasPoint: (point: Point) => void;
@@ -200,6 +202,8 @@ export function CanvasEditor({
   selectedTransitStationId,
   draftPoints,
   transitColor,
+  projectName,
+  sourceFileName,
   showGrid,
   showDebugMasks,
   onCanvasPoint,
@@ -892,7 +896,12 @@ export function CanvasEditor({
           )}
         </Layer>
       </Stage>
-      <StatusBar mouseWorldPoint={mouseWorldPoint} zoom={viewport.scale} />
+      <StatusBar
+        mouseWorldPoint={mouseWorldPoint}
+        zoom={viewport.scale}
+        projectName={projectName}
+        sourceFileName={sourceFileName}
+      />
     </main>
   );
 }

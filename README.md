@@ -62,6 +62,16 @@ npm run tauri build
 - For connector roads, set `Start zLevel` and `End zLevel` to control which layer each endpoint joins.
 - Use `Export JSON` to save the current project.
 - Use `Import JSON` to load a saved project.
+- Imported filenames are remembered in editor state only. Exported files use `<project-name>_YYYYMMDD_HHmmss.json`; existing timestamp suffixes are replaced instead of accumulated.
+
+## JSON Export Filename Tests
+
+- Import `taipei-road.json`, then export. Expected: `taipei-road_YYYYMMDD_HHmmss.json`.
+- Import `taipei-road_20260614_153022.json`, then export. Expected: `taipei-road_YYYYMMDD_HHmmss.json`.
+- Import `taipei-road_20260614_153022_20260614_161530.json`, then export. Expected: `taipei-road_YYYYMMDD_HHmmss.json`.
+- Import `my.project.v1.json`, then export. Expected: `my.project.v1_YYYYMMDD_HHmmss.json`.
+- Export before importing any file. Expected: `road-designer_YYYYMMDD_HHmmss.json`.
+- Import a filename with illegal filename characters, such as `taipei:road?.json`, then export. Expected: a sanitized filename such as `taipei-road_YYYYMMDD_HHmmss.json`.
 
 ## Manual Intersection Tests
 
@@ -92,6 +102,8 @@ npm run tauri build
 ## Data Format
 
 The MVP stores roads as custom JSON:
+
+Project name and source filename metadata are kept in editor state only. They are not written to `ProjectData`.
 
 ```ts
 type Point = {

@@ -1,10 +1,16 @@
 import type { ProjectData, Road } from "../types/road";
+import { buildExportFileName } from "./fileName";
 
 type TauriWindow = Window & {
   __TAURI_INTERNALS__?: unknown;
 };
 
 const isTauri = () => Boolean((window as TauriWindow).__TAURI_INTERNALS__);
+
+export type ImportedProject = {
+  project: ProjectData;
+  fileName: string;
+};
 
 function isValidRouteClass(value: unknown): boolean {
   return (
@@ -130,8 +136,12 @@ function validateProjectData(value: unknown): ProjectData {
   };
 }
 
-export async function exportProjectData(project: ProjectData): Promise<void> {
+export async function exportProjectData(
+  project: ProjectData,
+  options: { sourceFileName?: string; projectName?: string } = {},
+): Promise<void> {
   const content = JSON.stringify(project, null, 2);
+  const exportFileName = buildExportFileName(options.sourceFileName, options.projectName);
 
   if (isTauri()) {
     const [{ save }, { invoke }] = await Promise.all([
@@ -140,7 +150,7 @@ export async function exportProjectData(project: ProjectData): Promise<void> {
     ]);
     const path = await save({
       title: "Export road project",
-      defaultPath: "road-project.json",
+      defaultPath: exportFileName,
       filters: [{ name: "JSON", extensions: ["json"] }],
     });
 
@@ -154,7 +164,7 @@ export async function exportProjectData(project: ProjectData): Promise<void> {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = "road-project.json";
+  anchor.download = exportFileName;
   anchor.click();
   URL.revokeObjectURL(url);
 }
@@ -164,7 +174,7 @@ export async function importProjectDataFromFile(file: File): Promise<ProjectData
   return validateProjectData(JSON.parse(text));
 }
 
-export async function importProjectDataWithDialog(): Promise<ProjectData | null> {
+export async function importProjectDataWithDialog(): Promise<ImportedProject | null> {
   if (!isTauri()) {
     return null;
   }
@@ -184,5 +194,8 @@ export async function importProjectDataWithDialog(): Promise<ProjectData | null>
   }
 
   const text = await invoke<string>("read_project_file", { path });
-  return validateProjectData(JSON.parse(text));
+  return {
+    project: validateProjectData(JSON.parse(text)),
+    fileName: path.split(/[\\/]/).pop() ?? path,
+  };
 }
